@@ -1,0 +1,214 @@
+@use '../../../../styles.scss' as *;
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.config-label {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-family: $font-display;
+  font-size: $font-size-lg;
+  color: $text-primary;
+  
+  .material-icons {
+    font-size: 20px;
+    color: $accent-primary;
+  }
+}
+
+.config-description {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin: 0;
+}
+
+.path-input-group {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.config-input {
+  flex: 1;
+  font-family: $font-body;
+  font-size: $font-size-sm;
+  color: $text-primary;
+  background: $bg-tertiary;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  padding: $spacing-sm $spacing-md;
+  outline: none;
+  transition: border-color $transition-fast;
+  
+  &:focus {
+    border-color: $accent-primary;
+  }
+  
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+.browse-btn {
+  background: $bg-tertiary;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  color: $text-secondary;
+  cursor: pointer;
+  padding: $spacing-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+  
+  .material-icons {
+    font-size: 20px;
+  }
+  
+  &:hover {
+    border-color: $accent-primary;
+    color: $accent-primary;
+    background: rgba($accent-primary, 0.1);
+  }
+}
+
+.config-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border-color;
+  
+  button {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: $border-radius;
+    cursor: pointer;
+    font-family: $font-body;
+    font-size: $font-size-sm;
+    transition: all $transition-fast;
+    
+    .material-icons {
+      font-size: 18px;
+    }
+  }
+  
+  .btn-cancel {
+    background: transparent;
+    color: $text-secondary;
+    border: 1px solid $border-color;
+    
+    &:hover {
+      background: rgba($text-secondary, 0.1);
+      color: $text-primary;
+    }
+  }
+  
+  .btn-save {
+    background: $accent-primary;
+    color: $bg-primary;
+    
+    &:hover {
+      background: $accent-hover;
+    }
+  }
+}
+
+// Botón de escaneo
+.scan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-md;
+  margin-top: $spacing-sm;
+  background: linear-gradient(135deg, $accent-primary, darken($accent-primary, 10%));
+  border: none;
+  border-radius: $border-radius;
+  color: $bg-primary;
+  font-family: $font-body;
+  font-size: $font-size-md;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-fast;
+  
+  .material-icons {
+    font-size: 20px;
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($accent-primary, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Resultado del escaneo
+.scan-result {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background: rgba($accent-primary, 0.1);
+  border-radius: $border-radius;
+  border: 1px solid rgba($accent-primary, 0.2);
+  
+  &.has-errors {
+    background: rgba($color-error, 0.1);
+    border-color: rgba($color-error, 0.2);
+  }
+}
+
+.scan-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    
+    .material-icons {
+      font-size: 16px;
+    }
+    
+    &.new {
+      color: $color-success;
+    }
+    
+    &.updated {
+      color: $accent-primary;
+    }
+    
+    &.error {
+      color: $color-error;
+    }
+  }
+}

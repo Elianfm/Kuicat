@@ -1,0 +1,78 @@
+@use '../styles.scss' as *;
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.main-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+// Cards flotantes - se posicionan dentro del área de contenido principal
+.floating-card-left {
+  position: fixed;
+  bottom: 100px;
+  z-index: 50;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all $transition-normal;
+  pointer-events: none;
+  // Alineado con el borde izquierdo del contenido principal
+  // El left se calculará con CSS custom properties desde los componentes
+  left: $spacing-lg;
+}
+
+.floating-card-right {
+  position: fixed;
+  bottom: 100px;
+  z-index: 50;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all $transition-normal;
+  pointer-events: none;
+  right: $spacing-lg;
+}
+
+// Ajuste dinámico cuando los sidebars están abiertos
+// Las cards se mueven para no tapar los sidebars
+.main-layout:has(app-left-sidebar .sidebar.open) ~ .floating-card-left,
+.app-container:has(app-left-sidebar .sidebar.open) .floating-card-left {
+  left: calc(380px + #{$spacing-lg}); // Ancho del sidebar izquierdo (lyrics)
+}
+
+.main-layout:has(app-right-sidebar .sidebar.open) ~ .floating-card-right,
+.app-container:has(app-right-sidebar .sidebar.open) .floating-card-right {
+  right: calc(300px + #{$spacing-lg}); // Ancho del sidebar derecho (playlists)
+}
+
+// Cards aparecen siempre que hay hover en cualquier parte (igual que player-bar)
+.app-container:hover .floating-card-left,
+.app-container:hover .floating-card-right {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+// Player bar flotante que aparece al hover
+.player-bar-hover {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: all $transition-normal;
+}
+
+.app-container:hover .player-bar-hover {
+  opacity: 1;
+  transform: translateY(0);
+}

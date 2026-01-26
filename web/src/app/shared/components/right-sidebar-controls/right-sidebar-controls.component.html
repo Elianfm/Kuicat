@@ -1,0 +1,18 @@
+<div class="sidebar-controls" [class.has-active]="activeView() !== null">
+  <button 
+    class="control-btn" 
+    [class.active]="activeView() === 'playlist'"
+    (click)="toggle('playlist')"
+    title="Playlist"
+  >
+    <span class="material-icons">queue_music</span>
+  </button>
+  <button 
+    class="control-btn" 
+    [class.active]="activeView() === 'queue'"
+    (click)="toggle('queue')"
+    title="Próximas"
+  >
+    <span class="material-icons">playlist_play</span>
+  </button>
+</div>

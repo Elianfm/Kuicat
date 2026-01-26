@@ -1,0 +1,68 @@
+<aside class="sidebar right-sidebar" [class.open]="activeView() !== null">
+  @if (activeView() === 'playlist') {
+    <div class="sidebar-content">
+      <h3>Playlists</h3>
+      <div class="playlist-list">
+        @for (playlist of playlists(); track playlist.id) {
+          <div class="playlist-item" [class.contains-current]="isInPlaylist(playlist.id)">
+            <button 
+              class="play-btn" 
+              (click)="onPlayPlaylist(playlist.id)"
+              title="Reproducir playlist"
+            >
+              <span class="material-icons">play_arrow</span>
+            </button>
+            <span class="material-icons playlist-icon">{{ playlist.icon }}</span>
+            <div class="playlist-info">
+              <span class="playlist-name">{{ playlist.name }}</span>
+              <span class="playlist-count">{{ playlist.songCount }} canciones</span>
+            </div>
+            @if (isInPlaylist(playlist.id)) {
+              <button 
+                class="remove-btn" 
+                (click)="onRemoveFromPlaylist(playlist.id)"
+                title="Quitar canción de esta playlist"
+              >
+                <span class="material-icons">remove</span>
+              </button>
+            } @else {
+              <button 
+                class="add-btn" 
+                (click)="onAddToPlaylist(playlist.id)"
+                title="Agregar canción actual"
+              >
+                <span class="material-icons">add</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+      <button class="create-playlist-btn">
+        <span class="material-icons">add</span>
+        Nueva playlist
+      </button>
+    </div>
+  }
+  
+  @if (activeView() === 'queue') {
+    <div class="sidebar-content">
+      <h3>Próximas</h3>
+      <p class="queue-label">A continuación:</p>
+      <div class="song-list">
+        @for (song of queue; track song.id; let i = $index) {
+          <div class="song-item">
+            <span class="queue-number">{{ i + 1 }}</span>
+            <div class="song-item-info">
+              <span class="song-item-title">{{ song.title }}</span>
+              <span class="song-item-artist">{{ song.artist }}</span>
+            </div>
+            <span class="song-item-duration">{{ song.duration }}</span>
+          </div>
+        }
+      </div>
+      @if (queue.length === 0) {
+        <p class="empty-message">No hay canciones en la cola</p>
+      }
+    </div>
+  }
+</aside>

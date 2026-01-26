@@ -1,0 +1,189 @@
+@use '../../../styles.scss' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.player-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xl;
+  padding: $spacing-md $spacing-xl;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba($bg-secondary, 0.9));
+  border-top: 1px solid $border-color;
+  height: 80px;
+  backdrop-filter: blur(10px);
+}
+
+// Controles de reproducción
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.control-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid $text-muted;
+  color: $text-primary;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+
+  .material-icons {
+    font-size: 20px;
+  }
+
+  &:hover {
+    border-color: $accent-primary;
+    color: $accent-primary;
+    transform: scale(1.05);
+  }
+
+  &.play-btn {
+    width: 48px;
+    height: 48px;
+    background: $accent-primary;
+    border: none;
+    color: $bg-primary;
+
+    .material-icons {
+      font-size: 28px;
+    }
+
+    &:hover {
+      background: $accent-hover;
+      transform: scale(1.1);
+      color: $bg-primary;
+    }
+  }
+}
+
+// Barra de progreso
+.progress-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  max-width: 600px;
+}
+
+.time {
+  font-family: $font-body;
+  font-size: $font-size-xs;
+  color: $text-muted;
+  min-width: 40px;
+  text-align: center;
+}
+
+.progress-bar {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: $bg-tertiary;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: height $transition-fast;
+
+  &:hover {
+    height: 6px;
+  }
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: $accent-primary;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba($accent-primary, 0.5);
+  }
+
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: $accent-primary;
+    cursor: pointer;
+    border: none;
+  }
+}
+
+// Control de volumen
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  min-width: 120px;
+}
+
+.volume-icon {
+  color: $text-muted;
+  font-size: 20px;
+  cursor: pointer;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $accent-primary;
+  }
+}
+
+.volume-slider {
+  width: 80px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: $bg-tertiary;
+  border-radius: 2px;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: $text-primary;
+    cursor: pointer;
+  }
+
+  &::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: $text-primary;
+    cursor: pointer;
+    border: none;
+  }
+}
+
+// Botón de settings
+.settings-btn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: $text-muted;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all $transition-fast;
+
+  .material-icons {
+    font-size: 20px;
+  }
+
+  &:hover {
+    color: $accent-primary;
+    background: $bg-tertiary;
+  }
+}

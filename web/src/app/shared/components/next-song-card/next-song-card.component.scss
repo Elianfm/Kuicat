@@ -1,0 +1,62 @@
+@use '../../../../styles.scss' as *;
+
+:host {
+  display: block;
+}
+
+.next-song-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: rgba($bg-secondary, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  min-width: 200px;
+}
+
+.card-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: $border-radius;
+  object-fit: cover;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card-label {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: $font-display;
+  
+  .material-icons {
+    font-size: 14px;
+  }
+}
+
+.card-title {
+  font-family: $font-display;
+  font-size: $font-size-lg;
+  color: $text-secondary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-artist {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

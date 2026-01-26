@@ -1,0 +1,90 @@
+@use '../../../../styles.scss' as *;
+
+.toast-container {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: linear-gradient(0deg, rgba($bg-secondary, 0.8), rgba($bg-tertiary, 0.5));
+  backdrop-filter: blur(16px);
+  border-radius: 12px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  animation: toastSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-family: $font-display;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  
+  &.success {
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba($accent-primary, 0.2),
+      0 0 0 1px rgba($accent-primary, 0.1) inset;
+    
+    .icon-wrapper {
+      color: $accent-primary;
+    }
+  }
+  
+  &.error {
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba(#ff4444, 0.2);
+    
+    .icon-wrapper {
+      color: #ff4444;
+    }
+  }
+  
+  &.info {
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba($accent-primary, 0.15);
+    
+    .icon-wrapper {
+      color: $accent-primary;
+    }
+  }
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  
+  .material-icons {
+    font-size: 32px;
+  }
+}
+
+.message {
+  color: $text-primary;
+  font-weight: 500;
+}
+
+@keyframes toastSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

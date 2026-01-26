@@ -1,0 +1,17 @@
+<div class="main-view">
+  <!-- Controles flotantes de sidebars -->
+  <app-left-sidebar-controls [(activeView)]="leftSidebar" />
+  <app-right-sidebar-controls [(activeView)]="rightSidebar" />
+  
+  @if (hasVideo()) {
+    <!-- Video player -->
+    <video class="video-player" controls>
+      <source src="" type="video/mp4">
+    </video>
+  } @else {
+    <!-- Cover display -->
+    <div class="cover-display">
+      <img [src]="coverUrl()" [alt]="songTitle()" class="cover-image">
+    </div>
+  }
+</div>

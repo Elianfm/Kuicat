@@ -1,0 +1,50 @@
+<div class="app-container">
+  <!-- Layout principal con sidebars -->
+  <div class="main-layout">
+    <!-- Sidebar izquierda -->
+    <app-left-sidebar [activeView]="leftSidebar()" />
+    
+    <!-- Vista principal (video/cover) -->
+    <app-main-view 
+      [hasVideo]="currentSong().hasVideo"
+      [coverUrl]="currentSong().cover"
+      [songTitle]="currentSong().title"
+      [(leftSidebar)]="leftSidebar"
+      [(rightSidebar)]="rightSidebar"
+    />
+    
+    <!-- Sidebar derecha -->
+    <app-right-sidebar [activeView]="rightSidebar()" />
+  </div>
+  
+  <!-- Cards flotantes (posicionadas respecto a la pantalla) -->
+  <app-now-playing-card 
+    class="floating-card-left"
+    [title]="currentSong().title" 
+    [artist]="currentSong().artist"
+    [cover]="currentSong().cover"
+  />
+  <app-next-song-card 
+    class="floating-card-right"
+    [title]="nextSong().title" 
+    [artist]="nextSong().artist"
+    [cover]="nextSong().cover"
+  />
+  
+  <!-- Player bar (aparece al hover) -->
+  <app-player-bar 
+    class="player-bar-hover" 
+    (openSettings)="openConfigModal()"
+  />
+  
+  <!-- Modal de configuración -->
+  <app-config-modal
+    [isOpen]="configModalOpen()"
+    [config]="appConfig()"
+    (closeModal)="closeConfigModal()"
+    (configChange)="onConfigChange($event)"
+  />
+  
+  <!-- Toast notifications -->
+  <app-toast />
+</div>

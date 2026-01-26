@@ -1,0 +1,253 @@
+<aside class="sidebar left-sidebar" [class.open]="activeView() !== null">
+  @if (activeView() === 'lyrics') {
+    <div class="sidebar-content">
+      <div class="sidebar-header">
+        <h3>Lyrics</h3>
+        @if (!editingLyrics()) {
+          <button class="edit-lyrics-btn" (click)="startEditingLyrics()" title="Editar letra">
+            <span class="material-icons">edit</span>
+          </button>
+        }
+      </div>
+      
+      <div class="lyrics-container">
+        @if (editingLyrics()) {
+          <div class="lyrics-editor">
+            <textarea 
+              class="lyrics-textarea"
+              [(ngModel)]="lyricsEditValue"
+              placeholder="Escribe o pega la letra aquí..."
+              rows="20"
+            ></textarea>
+            <div class="lyrics-actions">
+              <button class="btn-cancel" (click)="cancelLyricsEditing()">
+                <span class="material-icons">close</span>
+                Cancelar
+              </button>
+              <button class="btn-save" (click)="saveLyrics()">
+                <span class="material-icons">check</span>
+                Guardar
+              </button>
+            </div>
+          </div>
+        } @else {
+          @if (lyrics()) {
+            <pre class="lyrics-text">{{ lyrics() }}</pre>
+          } @else {
+            <div class="lyrics-empty" (click)="startEditingLyrics()">
+              <span class="material-icons">music_note</span>
+              <p>No hay letra disponible</p>
+              <span class="add-lyrics-hint">Clic para añadir</span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+  
+  @if (activeView() === 'info') {
+    <div class="sidebar-content info-view">
+      <h3>Info</h3>
+      <div class="info-container">
+        <!-- Título -->
+        <div class="info-item" [class.editing]="editingField() === 'title'">
+          <span class="info-label">Título:</span>
+          @if (editingField() === 'title') {
+            <input 
+              type="text" 
+              class="info-input"
+              [(ngModel)]="editValue"
+              (blur)="saveField('title')"
+              (keydown)="onKeydown($event, 'title')"
+              #titleInput
+            >
+          } @else {
+            <span class="info-value editable" (click)="startEditing('title')">
+              {{ songInfo().title }}
+              <span class="material-icons edit-icon">edit</span>
+            </span>
+          }
+        </div>
+        
+        <!-- Artista -->
+        <div class="info-item" [class.editing]="editingField() === 'artist'">
+          <span class="info-label">Artista:</span>
+          @if (editingField() === 'artist') {
+            <input 
+              type="text" 
+              class="info-input"
+              [(ngModel)]="editValue"
+              (blur)="saveField('artist')"
+              (keydown)="onKeydown($event, 'artist')"
+            >
+          } @else {
+            <span class="info-value editable" (click)="startEditing('artist')">
+              {{ songInfo().artist }}
+              <span class="material-icons edit-icon">edit</span>
+            </span>
+          }
+        </div>
+        
+        <!-- Álbum -->
+        <div class="info-item" [class.editing]="editingField() === 'album'">
+          <span class="info-label">Álbum:</span>
+          @if (editingField() === 'album') {
+            <input 
+              type="text" 
+              class="info-input"
+              [(ngModel)]="editValue"
+              (blur)="saveField('album')"
+              (keydown)="onKeydown($event, 'album')"
+            >
+          } @else {
+            <span class="info-value editable" (click)="startEditing('album')">
+              {{ songInfo().album }}
+              <span class="material-icons edit-icon">edit</span>
+            </span>
+          }
+        </div>
+        
+        <!-- Género -->
+        <div class="info-item" [class.editing]="editingField() === 'genre'">
+          <span class="info-label">Género:</span>
+          @if (editingField() === 'genre') {
+            <input 
+              type="text" 
+              class="info-input"
+              [(ngModel)]="editValue"
+              (blur)="saveField('genre')"
+              (keydown)="onKeydown($event, 'genre')"
+            >
+          } @else {
+            <span class="info-value editable" (click)="startEditing('genre')">
+              {{ songInfo().genre }}
+              <span class="material-icons edit-icon">edit</span>
+            </span>
+          }
+        </div>
+        
+        <!-- Año -->
+        <div class="info-item" [class.editing]="editingField() === 'year'">
+          <span class="info-label">Año:</span>
+          @if (editingField() === 'year') {
+            <input 
+              type="number" 
+              class="info-input"
+              [(ngModel)]="editValue"
+              (blur)="saveField('year')"
+              (keydown)="onKeydown($event, 'year')"
+              min="1900"
+              max="2099"
+            >
+          } @else {
+            <span class="info-value editable" (click)="startEditing('year')">
+              {{ songInfo().year || 'Sin año' }}
+              <span class="material-icons edit-icon">edit</span>
+            </span>
+          }
+        </div>
+        
+        <!-- Duración (no editable) -->
+        <div class="info-item">
+          <span class="info-label">Duración:</span>
+          <span class="info-value">{{ songInfo().duration }}</span>
+        </div>
+        
+        <!-- Puntuación interactiva 1-10 -->
+        <div class="info-item rating-item">
+          <span class="info-label">Puntuación:</span>
+          <div class="rating-container">
+            @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {
+              <span 
+                class="rating-star"
+                [class.filled]="i <= (hoverRating() || songInfo().rating)"
+                [class.hover]="hoverRating() > 0 && i <= hoverRating()"
+                (mouseenter)="hoverRating.set(i)"
+                (mouseleave)="hoverRating.set(0)"
+                (click)="setRating(i)"
+              >
+                {{ i <= (hoverRating() || songInfo().rating) ? '★' : '☆' }}
+              </span>
+            }
+            <span class="rating-value">{{ songInfo().rating }}/10</span>
+          </div>
+        </div>
+        
+        <!-- Separador -->
+        <div class="info-divider"></div>
+        
+        <!-- Estadísticas automáticas -->
+        <div class="info-section-title">Estadísticas</div>
+        
+        <!-- Reproducciones (automático) -->
+        <div class="info-item auto-field">
+          <span class="info-label">Reproducciones:</span>
+          <span class="info-value auto">
+            <span class="material-icons stat-icon">play_circle</span>
+            {{ songInfo().playCount }} veces
+          </span>
+        </div>
+        
+        <!-- Última reproducción (automático) -->
+        <div class="info-item auto-field">
+          <span class="info-label">Última reproducción:</span>
+          <span class="info-value auto">
+            <span class="material-icons stat-icon">schedule</span>
+            {{ formatLastPlayed(songInfo().lastPlayed) }}
+          </span>
+        </div>
+        
+        <!-- Separador -->
+        <div class="info-divider"></div>
+        
+        <!-- Descripción (editable con textarea) -->
+        <div class="info-item description-item" [class.editing]="editingField() === 'description'">
+          <span class="info-label">Descripción:</span>
+          @if (editingField() === 'description') {
+            <textarea 
+              class="info-textarea"
+              [(ngModel)]="editValue"
+              (blur)="saveField('description')"
+              (keydown.escape)="cancelEditing()"
+              placeholder="Añade una descripción..."
+              rows="3"
+            ></textarea>
+          } @else {
+            <div class="notes-display editable" (click)="startEditing('description')">
+              @if (songInfo().description) {
+                <span class="notes-text">{{ songInfo().description }}</span>
+              } @else {
+                <span class="notes-placeholder">Añadir descripción...</span>
+              }
+              <span class="material-icons edit-icon">edit</span>
+            </div>
+          }
+        </div>
+        
+        <!-- Notas (editable con textarea) -->
+        <div class="info-item notes-item" [class.editing]="editingField() === 'notes'">
+          <span class="info-label">Notas:</span>
+          @if (editingField() === 'notes') {
+            <textarea 
+              class="info-textarea"
+              [(ngModel)]="editValue"
+              (blur)="saveField('notes')"
+              (keydown.escape)="cancelEditing()"
+              placeholder="Escribe tus notas aquí..."
+              rows="4"
+            ></textarea>
+          } @else {
+            <div class="notes-display editable" (click)="startEditing('notes')">
+              @if (songInfo().notes) {
+                <span class="notes-text">{{ songInfo().notes }}</span>
+              } @else {
+                <span class="notes-placeholder">Añadir notas...</span>
+              }
+              <span class="material-icons edit-icon">edit</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</aside>

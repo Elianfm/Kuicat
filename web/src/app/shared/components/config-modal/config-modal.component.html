@@ -1,0 +1,82 @@
+<app-modal 
+  [isOpen]="isOpen()" 
+  [title]="'Configuración'"
+  (closeModal)="onClose()"
+>
+  <div class="config-form">
+    <!-- Ruta de vídeos -->
+    <div class="config-field">
+      <label class="config-label">
+        <span class="material-icons">folder</span>
+        Carpeta de música
+      </label>
+      <p class="config-description">
+        Selecciona la carpeta donde se encuentran tus archivos de música.
+      </p>
+      <div class="path-input-group">
+        <input 
+          type="text" 
+          class="config-input"
+          [ngModel]="videosPath()"
+          (ngModelChange)="videosPath.set($event)"
+          placeholder="C:\Users\tu-usuario\Music"
+        >
+        <button class="browse-btn" (click)="onBrowse()" title="Seleccionar carpeta">
+          <span class="material-icons">folder_open</span>
+        </button>
+      </div>
+      
+      <!-- Botón de escaneo -->
+      <button 
+        class="scan-btn" 
+        (click)="onScan()" 
+        [disabled]="isScanning() || !videosPath()"
+      >
+        @if (isScanning()) {
+          <span class="material-icons spinning">refresh</span>
+          Escaneando...
+        } @else {
+          <span class="material-icons">library_music</span>
+          Escanear biblioteca
+        }
+      </button>
+      
+      <!-- Resultado del escaneo -->
+      @if (scanResult()) {
+        <div class="scan-result" [class.has-errors]="scanResult()!.errors > 0">
+          <div class="scan-stats">
+            <span class="stat">
+              <span class="material-icons">music_note</span>
+              {{ scanResult()!.totalFiles }} archivos
+            </span>
+            <span class="stat new">
+              <span class="material-icons">add_circle</span>
+              {{ scanResult()!.newSongs }} nuevas
+            </span>
+            <span class="stat updated">
+              <span class="material-icons">update</span>
+              {{ scanResult()!.updatedSongs }} actualizadas
+            </span>
+            @if (scanResult()!.errors > 0) {
+              <span class="stat error">
+                <span class="material-icons">error</span>
+                {{ scanResult()!.errors }} errores
+              </span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+    
+    <!-- Acciones -->
+    <div class="config-actions">
+      <button class="btn-cancel" (click)="onClose()">
+        Cancelar
+      </button>
+      <button class="btn-save" (click)="onSave()">
+        <span class="material-icons">save</span>
+        Guardar
+      </button>
+    </div>
+  </div>
+</app-modal>

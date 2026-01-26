@@ -1,0 +1,18 @@
+<dialog 
+  #dialogRef
+  class="modal-dialog"
+  (click)="onDialogClick($event)"
+  (cancel)="onCancel($event)"
+>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">{{ title() }}</h2>
+      <button class="modal-close" (click)="onCloseClick()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <ng-content />
+    </div>
+  </div>
+</dialog>

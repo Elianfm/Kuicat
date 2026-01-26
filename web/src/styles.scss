@@ -1,0 +1,227 @@
+/* ============================================
+   KUICAT - Global Styles
+   Estética: Retro / Negro + Amarillo
+   ============================================ */
+
+// ============================================
+// VARIABLES
+// ============================================
+
+// Colores de fondo
+$bg-primary: #0a0a0a;
+$bg-secondary: #1a1a1a;
+$bg-tertiary: #252525;
+
+// Colores de acento (amarillo)
+$accent-primary: #FFD700;
+$accent-secondary: #FFC107;
+$accent-hover: #FFE44D;
+$accent-muted: #B8960F;
+
+// Colores de texto
+$text-primary: #FFFFFF;
+$text-secondary: #B0B0B0;
+$text-muted: #666666;
+
+// Estados
+$success: #4CAF50;
+$error: #F44336;
+$warning: #FF9800;
+
+// Fuentes
+$font-display: 'VT323', monospace;      // Títulos, elementos destacados
+$font-body: 'Space Mono', monospace;    // Texto legible
+
+// Tamaños de fuente
+$font-size-xs: 0.75rem;
+$font-size-sm: 0.875rem;
+$font-size-base: 1rem;
+$font-size-lg: 1.25rem;
+$font-size-xl: 1.5rem;
+$font-size-2xl: 2rem;
+$font-size-3xl: 2.5rem;
+
+// Espaciado
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+$spacing-2xl: 3rem;
+
+// Bordes
+$border-radius: 4px;
+$border-color: #333333;
+
+// Transiciones
+$transition-fast: 150ms ease;
+$transition-normal: 300ms ease;
+
+// ============================================
+// RESET & BASE
+// ============================================
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: $font-body;
+  font-size: $font-size-base;
+  background-color: $bg-primary;
+  color: $text-primary;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+// ============================================
+// TIPOGRAFÍA
+// ============================================
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-display;
+  font-weight: 400;
+  line-height: 1.2;
+  color: $accent-primary;
+}
+
+h1 { font-size: $font-size-3xl; }
+h2 { font-size: $font-size-2xl; }
+h3 { font-size: $font-size-xl; }
+h4 { font-size: $font-size-lg; }
+
+p {
+  margin-bottom: $spacing-md;
+}
+
+a {
+  color: $accent-primary;
+  text-decoration: none;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $accent-hover;
+  }
+}
+
+// ============================================
+// UTILIDADES
+// ============================================
+
+.text-accent { color: $accent-primary; }
+.text-muted { color: $text-muted; }
+.text-secondary { color: $text-secondary; }
+
+.font-display { font-family: $font-display; }
+.font-body { font-family: $font-body; }
+
+// ============================================
+// COMPONENTES BASE
+// ============================================
+
+// Botones
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  font-family: $font-display;
+  font-size: $font-size-lg;
+  border: 2px solid transparent;
+  border-radius: $border-radius;
+  cursor: pointer;
+  transition: all $transition-fast;
+  
+  &-primary {
+    background-color: $accent-primary;
+    color: $bg-primary;
+    
+    &:hover {
+      background-color: $accent-hover;
+      transform: translateY(-2px);
+    }
+  }
+  
+  &-secondary {
+    background-color: transparent;
+    border-color: $accent-primary;
+    color: $accent-primary;
+    
+    &:hover {
+      background-color: $accent-primary;
+      color: $bg-primary;
+    }
+  }
+  
+  &-ghost {
+    background-color: transparent;
+    color: $text-secondary;
+    
+    &:hover {
+      color: $accent-primary;
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+// Cards
+.card {
+  background-color: $bg-secondary;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  padding: $spacing-lg;
+}
+
+// Inputs
+input, select, textarea {
+  font-family: $font-body;
+  font-size: $font-size-base;
+  background-color: $bg-secondary;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  padding: $spacing-sm $spacing-md;
+  color: $text-primary;
+  transition: border-color $transition-fast;
+  
+  &:focus {
+    outline: none;
+    border-color: $accent-primary;
+  }
+  
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+// Scrollbar personalizado
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: $bg-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $accent-muted;
+  border-radius: 4px;
+  
+  &:hover {
+    background: $accent-primary;
+  }
+}

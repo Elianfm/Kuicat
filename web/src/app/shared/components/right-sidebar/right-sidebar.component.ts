@@ -1,0 +1,111 @@
+import { Component, input, output, signal, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ToastService } from '../toast/toast.component';
+
+interface Playlist {
+  id: number;
+  name: string;
+  icon: string;
+  songCount: number;
+  songIds: number[];
+}
+
+@Component({
+  selector: 'app-right-sidebar',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './right-sidebar.component.html',
+  styleUrl: './right-sidebar.component.scss'
+})
+export class RightSidebarComponent {
+  private readonly toastService = inject(ToastService);
+  
+  activeView = input<'playlist' | 'queue' | null>(null);
+  currentSongId = input<number>(1); // ID de la canción actual
+  
+  // Evento para agregar canción actual a una playlist
+  addToPlaylist = output<number>();
+  
+  // Evento para quitar canción actual de una playlist
+  removeFromPlaylist = output<number>();
+  
+  // Evento para reproducir una playlist
+  playPlaylist = output<number>();
+  
+  // Mock data - Lista de playlists con IDs de canciones que contienen (usando signal para reactividad)
+  playlists = signal<Playlist[]>([
+    { id: 1, name: 'Favoritas', icon: 'favorite', songCount: 42, songIds: [1, 3, 5] },
+    { id: 2, name: 'Para trabajar', icon: 'work', songCount: 28, songIds: [2, 4] },
+    { id: 3, name: 'Chill', icon: 'spa', songCount: 15, songIds: [1, 2] },
+    { id: 4, name: 'Workout', icon: 'fitness_center', songCount: 33, songIds: [3, 4, 5] },
+    { id: 5, name: 'Road Trip', icon: 'directions_car', songCount: 56, songIds: [1, 5] },
+  ]);
+  
+  // Cola de reproducción
+  queue = [
+    { id: 2, title: 'Siguiente Canción', artist: 'Artista B', duration: '4:12' },
+    { id: 3, title: 'Después de esa', artist: 'Artista A', duration: '3:30' },
+  ];
+  
+  // Verifica si la canción actual está en una playlist
+  isInPlaylist(playlistId: number): boolean {
+    const playlist = this.playlists().find(p => p.id === playlistId);
+    return playlist?.songIds.includes(this.currentSongId()) ?? false;
+  }
+  
+  onAddToPlaylist(playlistId: number): void {
+    const playlist = this.playlists().find(p => p.id === playlistId);
+    
+    // Actualizar el estado local
+    this.playlists.update(playlists => 
+      playlists.map(p => {
+        if (p.id === playlistId && !p.songIds.includes(this.currentSongId())) {
+          return {
+            ...p,
+            songIds: [...p.songIds, this.currentSongId()],
+            songCount: p.songCount + 1
+          };
+        }
+        return p;
+      })
+    );
+    
+    // Mostrar notificación
+    if (playlist) {
+      this.toastService.success(`Agregada a "${playlist.name}"`);
+    }
+    
+    // Emitir evento para el componente padre
+    this.addToPlaylist.emit(playlistId);
+  }
+  
+  onRemoveFromPlaylist(playlistId: number): void {
+    const playlist = this.playlists().find(p => p.id === playlistId);
+    
+    // Actualizar el estado local
+    this.playlists.update(playlists => 
+      playlists.map(p => {
+        if (p.id === playlistId && p.songIds.includes(this.currentSongId())) {
+          return {
+            ...p,
+            songIds: p.songIds.filter(id => id !== this.currentSongId()),
+            songCount: p.songCount - 1
+          };
+        }
+        return p;
+      })
+    );
+    
+    // Mostrar notificación
+    if (playlist) {
+      this.toastService.info(`Quitada de "${playlist.name}"`);
+    }
+    
+    // Emitir evento para el componente padre
+    this.removeFromPlaylist.emit(playlistId);
+  }
+  
+  onPlayPlaylist(playlistId: number): void {
+    this.playPlaylist.emit(playlistId);
+  }
+}

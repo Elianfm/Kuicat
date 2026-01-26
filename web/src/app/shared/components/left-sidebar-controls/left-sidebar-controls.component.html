@@ -1,0 +1,18 @@
+<div class="sidebar-controls" [class.has-active]="activeView() !== null">
+  <button 
+    class="control-btn" 
+    [class.active]="activeView() === 'lyrics'"
+    (click)="toggle('lyrics')"
+    title="Lyrics"
+  >
+    <span class="material-icons">lyrics</span>
+  </button>
+  <button 
+    class="control-btn" 
+    [class.active]="activeView() === 'info'"
+    (click)="toggle('info')"
+    title="Info"
+  >
+    <span class="material-icons">info</span>
+  </button>
+</div>

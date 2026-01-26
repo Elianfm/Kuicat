@@ -1,0 +1,48 @@
+<div class="player-bar">
+  <!-- Controles de reproducción -->
+  <div class="player-controls">
+    <button class="control-btn" (click)="previousTrack()">
+      <span class="material-icons">skip_previous</span>
+    </button>
+    <button class="control-btn play-btn" (click)="togglePlay()">
+      <span class="material-icons">{{ isPlaying() ? 'pause' : 'play_arrow' }}</span>
+    </button>
+    <button class="control-btn" (click)="nextTrack()">
+      <span class="material-icons">skip_next</span>
+    </button>
+  </div>
+  
+  <!-- Barra de progreso -->
+  <div class="progress-section">
+    <span class="time">{{ formattedCurrentTime() }}</span>
+    <input 
+      type="range" 
+      class="progress-bar"
+      [min]="0" 
+      [max]="duration()" 
+      [value]="currentTime()"
+      (input)="seek($event)"
+    >
+    <span class="time">{{ formattedDuration() }}</span>
+  </div>
+  
+  <!-- Volumen -->
+  <div class="volume-control">
+    <span class="material-icons volume-icon">
+      {{ volume() === 0 ? 'volume_off' : volume() < 50 ? 'volume_down' : 'volume_up' }}
+    </span>
+    <input 
+      type="range" 
+      class="volume-slider"
+      min="0" 
+      max="100" 
+      [value]="volume()"
+      (input)="setVolume($event)"
+    >
+  </div>
+  
+  <!-- Settings -->
+  <button class="settings-btn" title="Settings" (click)="onOpenSettings()">
+    <span class="material-icons">settings</span>
+  </button>
+</div>
