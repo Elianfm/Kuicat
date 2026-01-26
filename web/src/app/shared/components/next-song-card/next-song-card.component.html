@@ -1,11 +1,76 @@
 <div class="next-song-card">
-  <img [src]="cover()" alt="Cover" class="card-cover">
-  <div class="card-info">
+  <!-- Header con label y ranking controls -->
+  <div class="card-header">
     <span class="card-label">
       <span class="material-icons">skip_next</span>
-      Next
+      Siguiente
     </span>
-    <span class="card-title">{{ title() }}</span>
-    <span class="card-artist">{{ artist() }}</span>
+    
+    <!-- Ranking controls -->
+    <div class="ranking-controls-wrapper">
+      @if (rankPosition()) {
+        <div class="ranking-controls">
+          <button 
+            class="rank-arrow-btn" 
+            [disabled]="rankPosition() === 1"
+            (click)="onMoveUp()"
+          >
+            <span class="material-icons">keyboard_arrow_up</span>
+            @if (prevSong()) {
+              <div class="rank-tooltip rank-tooltip-up">
+                <span class="tooltip-action">Subir a #{{ rankPosition()! - 1 }}</span>
+                <div class="tooltip-song">
+                  <img [src]="prevSong()!.cover" alt="" class="tooltip-cover">
+                  <div class="tooltip-info">
+                    <span class="tooltip-title">{{ prevSong()!.title }}</span>
+                    <span class="tooltip-artist">{{ prevSong()!.artist }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </button>
+          
+          <span class="rank-position">#{{ rankPosition() }}</span>
+          
+          <button 
+            class="rank-arrow-btn" 
+            [disabled]="rankPosition() === totalRanked()"
+            (click)="onMoveDown()"
+          >
+            <span class="material-icons">keyboard_arrow_down</span>
+            @if (nextSong()) {
+              <div class="rank-tooltip rank-tooltip-down">
+                <span class="tooltip-action">Bajar a #{{ rankPosition()! + 1 }}</span>
+                <div class="tooltip-song">
+                  <img [src]="nextSong()!.cover" alt="" class="tooltip-cover">
+                  <div class="tooltip-info">
+                    <span class="tooltip-title">{{ nextSong()!.title }}</span>
+                    <span class="tooltip-artist">{{ nextSong()!.artist }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </button>
+          
+          <button class="rank-remove-btn" (click)="onRemoveFromRanking()" title="Quitar del ranking">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      } @else {
+        <button class="ranking-add-btn" (click)="onAddToRanking()">
+          <span class="material-icons">military_tech</span>
+          <span class="add-label">Sin ranking</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Contenido -->
+  <div class="card-content">
+    <img [src]="cover()" alt="Cover" class="card-cover">
+    <div class="card-info">
+      <span class="card-title">{{ title() }}</span>
+      <span class="card-artist">{{ artist() }}</span>
+    </div>
   </div>
 </div>

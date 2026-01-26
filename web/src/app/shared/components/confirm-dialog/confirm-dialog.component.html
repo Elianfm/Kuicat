@@ -1,0 +1,17 @@
+@if (dialogService.isOpen()) {
+  <div class="dialog-backdrop" (click)="onBackdropClick($event)">
+    <div class="dialog-container">
+      <h3 class="dialog-title">{{ dialogService.config()?.title }}</h3>
+      <p class="dialog-message">{{ dialogService.config()?.message }}</p>
+      
+      <div class="dialog-actions">
+        <button class="btn btn-cancel" (click)="onCancel()">
+          {{ dialogService.config()?.cancelText || 'Cancelar' }}
+        </button>
+        <button class="btn btn-confirm" (click)="onConfirm()">
+          {{ dialogService.config()?.confirmText || 'Confirmar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

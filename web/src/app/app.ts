@@ -8,6 +8,7 @@ import { NowPlayingCardComponent } from './shared/components/now-playing-card/no
 import { NextSongCardComponent } from './shared/components/next-song-card/next-song-card.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConfigModalComponent, AppConfig } from './shared/components/config-modal/config-modal.component';
+import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -21,7 +22,8 @@ import { ConfigModalComponent, AppConfig } from './shared/components/config-moda
     NowPlayingCardComponent,
     NextSongCardComponent,
     ToastComponent,
-    ConfigModalComponent
+    ConfigModalComponent,
+    ConfirmDialogComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
@@ -29,7 +31,7 @@ import { ConfigModalComponent, AppConfig } from './shared/components/config-moda
 export class App {
   // Estado de sidebars (controlado desde main-view)
   leftSidebar = signal<'lyrics' | 'info' | null>(null);
-  rightSidebar = signal<'playlist' | 'queue' | null>(null);
+  rightSidebar = signal<'playlist' | 'queue' | 'ranking' | null>(null);
   
   // Info de la canción actual (mock)
   currentSong = signal({

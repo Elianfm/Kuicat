@@ -28,17 +28,17 @@
   
   <!-- Volumen -->
   <div class="volume-control">
-    <span class="material-icons volume-icon">
-      {{ volume() === 0 ? 'volume_off' : volume() < 50 ? 'volume_down' : 'volume_up' }}
-    </span>
-    <input 
-      type="range" 
-      class="volume-slider"
-      min="0" 
-      max="100" 
-      [value]="volume()"
-      (input)="setVolume($event)"
-    >
+    <button class="volume-btn">
+      <span class="material-icons">
+        {{ volume() === 0 ? 'volume_off' : volume() < 50 ? 'volume_down' : 'volume_up' }}
+      </span>
+    </button>
+    <div class="volume-popup">
+      <div class="volume-track" (mousedown)="onVolumeTrackMouseDown($event)">
+        <div class="volume-fill" [style.height.%]="volume()"></div>
+      </div>
+      <span class="volume-value">{{ volume() }}%</span>
+    </div>
   </div>
   
   <!-- Settings -->

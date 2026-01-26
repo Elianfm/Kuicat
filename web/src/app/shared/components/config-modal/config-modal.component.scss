@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '../../../../styles.scss' as *;
 
 .config-form {
@@ -135,12 +136,12 @@
   width: 100%;
   padding: $spacing-md;
   margin-top: $spacing-sm;
-  background: linear-gradient(135deg, $accent-primary, darken($accent-primary, 10%));
+  background: linear-gradient(135deg, $accent-primary, color.adjust($accent-primary, $lightness: -10%));
   border: none;
   border-radius: $border-radius;
   color: $bg-primary;
   font-family: $font-body;
-  font-size: $font-size-md;
+  font-size: $font-size-base;
   font-weight: 500;
   cursor: pointer;
   transition: all $transition-fast;
@@ -178,8 +179,8 @@
   border: 1px solid rgba($accent-primary, 0.2);
   
   &.has-errors {
-    background: rgba($color-error, 0.1);
-    border-color: rgba($color-error, 0.2);
+    background: rgba($error, 0.1);
+    border-color: rgba($error, 0.2);
   }
 }
 
@@ -200,7 +201,7 @@
     }
     
     &.new {
-      color: $color-success;
+      color: $success;
     }
     
     &.updated {
@@ -208,7 +209,7 @@
     }
     
     &.error {
-      color: $color-error;
+      color: $error;
     }
   }
 }

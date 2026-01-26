@@ -35,10 +35,116 @@
   align-items: center;
   justify-content: center;
   background-color: $bg-primary;
+  position: relative;
 }
 
 .cover-image {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+// ===================================
+// RANKING BADGE
+// ===================================
+
+.ranking-badge-container {
+  position: absolute;
+  top: $spacing-lg;
+  right: $spacing-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  z-index: 10;
+}
+
+.ranking-badge {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  font-family: $font-display;
+  font-size: $font-size-sm;
+  font-weight: 700;
+  transition: all $transition-fast;
+  backdrop-filter: blur(8px);
+  
+  .material-icons {
+    font-size: 20px;
+  }
+  
+  &.ranked {
+    background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+    color: $bg-primary;
+    box-shadow: 0 4px 16px rgba($accent-primary, 0.4);
+    
+    .rank-number {
+      font-size: $font-size-lg;
+    }
+    
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 24px rgba($accent-primary, 0.5);
+    }
+  }
+  
+  &.not-ranked {
+    background: rgba($bg-secondary, 0.8);
+    color: $text-secondary;
+    border: 1px solid rgba($text-muted, 0.2);
+    
+    .label {
+      font-weight: 500;
+    }
+    
+    &:hover:not(:disabled) {
+      background: rgba($accent-primary, 0.2);
+      color: $accent-primary;
+      border-color: rgba($accent-primary, 0.3);
+    }
+    
+    &:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+}
+
+.ranking-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all $transition-fast;
+  backdrop-filter: blur(8px);
+  
+  .material-icons {
+    font-size: 18px;
+  }
+  
+  &.remove {
+    background: rgba($bg-secondary, 0.8);
+    color: $text-muted;
+    
+    &:hover {
+      background: rgba($error, 0.9);
+      color: white;
+    }
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

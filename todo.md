@@ -123,6 +123,26 @@ Tabla: playlist_songs
 - [x] Actualización incremental (solo archivos modificados)
 - [x] `LibraryController` - Endpoints: POST /api/library/scan, POST /api/library/cleanup
 
+### Frontend - Sistema de Ranking Personal
+- [x] `RankingService` Angular (core/services)
+- [x] Vista de ranking en sidebar derecho con drag & drop
+- [x] Botón de ranking en controles del sidebar derecho
+- [x] Now Playing Card con controles de ranking:
+  - [x] Muestra posición actual (#1, #2, etc.)
+  - [x] Botones ▲▼ para subir/bajar posición
+  - [x] Tooltip rico con preview de canción a intercambiar
+  - [x] Botón para añadir al ranking si no está rankeada
+  - [x] Confirmación al quitar del ranking
+- [x] Next Song Card con mismos controles de ranking
+- [x] Componente ConfirmDialog reutilizable
+
+### Frontend - Mejoras de UI
+- [x] Control de volumen rediseñado:
+  - [x] Solo icono visible normalmente
+  - [x] Popup vertical al hacer hover
+  - [x] Barra visual con relleno de color (sin thumb)
+  - [x] Soporte para arrastrar (click + drag)
+
 ### Backend - Sistema de Ranking Personal
 - [x] Campo `ranking` en entidad Song (null = sin rankear)
 - [x] `RankingService` - Algoritmo con gaps de 1000 para O(1) inserciones
@@ -157,8 +177,8 @@ Tabla: playlist_songs
 - [x] Puntuaciones manuales del usuario (1-10 estrellas)
 - [x] Sistema de ranking personal con posiciones
 - [x] API de ranking con inserciones eficientes O(1)
-- [ ] UI para gestionar ranking (drag & drop, botones ▲▼)
-- [ ] Vista "Mi Ranking" con lista ordenada
+- [x] UI para gestionar ranking (drag & drop en sidebar, botones ▲▼ en cards)
+- [x] Vista "Ranking" en sidebar derecho con lista ordenada
 
 ### 3. Playlists Dinámicas
 - [ ] Crear playlists por **género**

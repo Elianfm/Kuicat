@@ -165,7 +165,7 @@ public class MusicScannerService {
             .filePath(path.toAbsolutePath().toString())
             .fileHash(fileHash)
             .format(extension)
-            .bitrate(header.getBitRateAsNumber() != null ? (int) header.getBitRateAsNumber() : null)
+            .bitrate(header.getBitRateAsNumber() > 0 ? (int) header.getBitRateAsNumber() : null)
             .sampleRate(header.getSampleRateAsNumber())
             .duration(header.getTrackLength())
             .title(getTagOrDefault(tag, FieldKey.TITLE, getFileNameWithoutExtension(fileName)))
@@ -196,7 +196,7 @@ public class MusicScannerService {
         
         song.setFileHash(fileHash);
         song.setFormat(extension);
-        song.setBitrate(header.getBitRateAsNumber() != null ? (int) header.getBitRateAsNumber() : null);
+        song.setBitrate(header.getBitRateAsNumber() > 0 ? (int) header.getBitRateAsNumber() : null);
         song.setSampleRate(header.getSampleRateAsNumber());
         song.setDuration(header.getTrackLength());
         song.setTitle(getTagOrDefault(tag, FieldKey.TITLE, getFileNameWithoutExtension(fileName)));

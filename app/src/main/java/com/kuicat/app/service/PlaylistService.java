@@ -196,9 +196,10 @@ public class PlaylistService {
         
         for (int i = 0; i < songIds.size(); i++) {
             Long songId = songIds.get(i);
+            final int orderIndex = i;
             playlistSongRepository.findByPlaylistIdAndSongId(playlistId, songId)
                     .ifPresent(ps -> {
-                        ps.setOrderIndex(i);
+                        ps.setOrderIndex(orderIndex);
                         playlistSongRepository.save(ps);
                     });
         }

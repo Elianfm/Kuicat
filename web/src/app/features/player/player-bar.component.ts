@@ -1,4 +1,4 @@
-import { Component, signal, computed, output } from '@angular/core';
+import { Component, signal, computed, output, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -17,6 +17,10 @@ export class PlayerBarComponent {
   currentTime = signal(0);
   duration = signal(240); // 4 minutos ejemplo
   volume = signal(75);
+  
+  // Estado de drag del volumen
+  private isDraggingVolume = false;
+  private volumeTrackElement: HTMLElement | null = null;
   
   // Tiempo formateado
   formattedCurrentTime = computed(() => this.formatTime(this.currentTime()));
@@ -43,6 +47,37 @@ export class PlayerBarComponent {
   setVolume(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.volume.set(Number(input.value));
+  }
+  
+  /** Iniciar drag en el track de volumen */
+  onVolumeTrackMouseDown(event: MouseEvent): void {
+    this.isDraggingVolume = true;
+    this.volumeTrackElement = event.currentTarget as HTMLElement;
+    this.updateVolumeFromMouseEvent(event);
+    event.preventDefault();
+  }
+  
+  /** Mouse move global para drag */
+  @HostListener('document:mousemove', ['$event'])
+  onDocumentMouseMove(event: MouseEvent): void {
+    if (this.isDraggingVolume && this.volumeTrackElement) {
+      this.updateVolumeFromMouseEvent(event);
+    }
+  }
+  
+  /** Mouse up global para terminar drag */
+  @HostListener('document:mouseup')
+  onDocumentMouseUp(): void {
+    this.isDraggingVolume = false;
+    this.volumeTrackElement = null;
+  }
+  
+  private updateVolumeFromMouseEvent(event: MouseEvent): void {
+    if (!this.volumeTrackElement) return;
+    const rect = this.volumeTrackElement.getBoundingClientRect();
+    const clickY = rect.bottom - event.clientY;
+    const percent = Math.max(0, Math.min(100, (clickY / rect.height) * 100));
+    this.volume.set(Math.round(percent));
   }
   
   private formatTime(seconds: number): string {

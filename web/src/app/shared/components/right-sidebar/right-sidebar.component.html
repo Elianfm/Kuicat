@@ -1,4 +1,57 @@
 <aside class="sidebar right-sidebar" [class.open]="activeView() !== null">
+  @if (activeView() === 'ranking') {
+    <div class="sidebar-content ranking-view">
+      <div class="sidebar-header">
+        <h3>
+          <span class="material-icons header-icon">military_tech</span>
+          Mi Ranking
+        </h3>
+        <span class="ranking-count">{{ rankedSongs().length }} canciones</span>
+      </div>
+      
+      @if (loadingRanking()) {
+        <div class="loading-state">
+          <span class="material-icons spinning">autorenew</span>
+          <p>Cargando...</p>
+        </div>
+      } @else if (rankedSongs().length === 0) {
+        <div class="ranking-empty">
+          <span class="material-icons">emoji_events</span>
+          <p>Tu ranking está vacío</p>
+          <span class="hint">Añade canciones desde la carátula</span>
+        </div>
+      } @else {
+        <div class="ranking-list" cdkDropList (cdkDropListDropped)="onRankingDrop($event)">
+          @for (song of rankedSongs(); track song.id; let i = $index) {
+            <div 
+              class="ranking-item" 
+              cdkDrag
+              [class.current]="song.id === currentSongId()"
+              (click)="onPlayFromRanking(song)"
+            >
+              <div class="drag-handle" cdkDragHandle>
+                <span class="material-icons">drag_indicator</span>
+              </div>
+              <span class="rank-position">{{ i + 1 }}</span>
+              <div class="song-info">
+                <span class="song-title">{{ song.title }}</span>
+                <span class="song-artist">{{ song.artist }}</span>
+              </div>
+              <span class="song-duration">{{ formatDuration(song.duration) }}</span>
+              <button 
+                class="remove-btn" 
+                (click)="removeFromRanking(song, $event)"
+                title="Quitar del ranking"
+              >
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+  
   @if (activeView() === 'playlist') {
     <div class="sidebar-content">
       <h3>Playlists</h3>

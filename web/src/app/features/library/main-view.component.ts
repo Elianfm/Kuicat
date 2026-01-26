@@ -26,5 +26,5 @@ export class MainViewComponent {
   
   // Control de sidebars (two-way binding)
   leftSidebar = model<'lyrics' | 'info' | null>(null);
-  rightSidebar = model<'playlist' | 'queue' | null>(null);
+  rightSidebar = model<'playlist' | 'queue' | 'ranking' | null>(null);
 }

@@ -1,6 +1,14 @@
 <div class="sidebar-controls" [class.has-active]="activeView() !== null">
   <button 
     class="control-btn" 
+    [class.active]="activeView() === 'ranking'"
+    (click)="toggle('ranking')"
+    title="Mi Ranking"
+  >
+    <span class="material-icons">military_tech</span>
+  </button>
+  <button 
+    class="control-btn" 
     [class.active]="activeView() === 'playlist'"
     (click)="toggle('playlist')"
     title="Playlist"

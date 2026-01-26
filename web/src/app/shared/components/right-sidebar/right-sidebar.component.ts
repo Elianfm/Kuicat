@@ -1,6 +1,9 @@
 import { Component, input, output, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ToastService } from '../toast/toast.component';
+import { RankingService } from '../../../core/services/ranking.service';
+import { Song } from '../../../models';
 
 interface Playlist {
   id: number;
@@ -13,14 +16,15 @@ interface Playlist {
 @Component({
   selector: 'app-right-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DragDropModule],
   templateUrl: './right-sidebar.component.html',
   styleUrl: './right-sidebar.component.scss'
 })
 export class RightSidebarComponent {
   private readonly toastService = inject(ToastService);
+  private readonly rankingService = inject(RankingService);
   
-  activeView = input<'playlist' | 'queue' | null>(null);
+  activeView = input<'playlist' | 'queue' | 'ranking' | null>(null);
   currentSongId = input<number>(1); // ID de la canción actual
   
   // Evento para agregar canción actual a una playlist
@@ -107,5 +111,75 @@ export class RightSidebarComponent {
   
   onPlayPlaylist(playlistId: number): void {
     this.playPlaylist.emit(playlistId);
+  }
+  
+  // === RANKING ===
+  rankedSongs = signal<Song[]>([]);
+  loadingRanking = signal<boolean>(false);
+  
+  // Evento para reproducir canción desde el ranking
+  playSong = output<Song>();
+  
+  ngOnChanges(): void {
+    if (this.activeView() === 'ranking') {
+      this.loadRanking();
+    }
+  }
+  
+  loadRanking(): void {
+    this.loadingRanking.set(true);
+    this.rankingService.getRankedSongs().subscribe({
+      next: (songs) => {
+        this.rankedSongs.set(songs.filter(s => s.rankPosition !== null));
+        this.loadingRanking.set(false);
+      },
+      error: () => {
+        this.loadingRanking.set(false);
+        this.toastService.error('Error al cargar ranking');
+      }
+    });
+  }
+  
+  onRankingDrop(event: CdkDragDrop<Song[]>): void {
+    const songs = [...this.rankedSongs()];
+    moveItemInArray(songs, event.previousIndex, event.currentIndex);
+    this.rankedSongs.set(songs);
+    
+    const movedSong = songs[event.currentIndex];
+    const newPosition = event.currentIndex + 1;
+    
+    this.rankingService.moveInRanking(movedSong.id, newPosition).subscribe({
+      next: () => {
+        this.toastService.success(`"${movedSong.title}" movida a #${newPosition}`);
+        this.loadRanking();
+      },
+      error: () => {
+        this.toastService.error('Error al mover canción');
+        this.loadRanking();
+      }
+    });
+  }
+  
+  removeFromRanking(song: Song, event: Event): void {
+    event.stopPropagation();
+    this.rankingService.removeFromRanking(song.id).subscribe({
+      next: () => {
+        this.rankedSongs.update(songs => songs.filter(s => s.id !== song.id));
+        this.toastService.success(`"${song.title}" quitada del ranking`);
+      },
+      error: () => {
+        this.toastService.error('Error al quitar del ranking');
+      }
+    });
+  }
+  
+  onPlayFromRanking(song: Song): void {
+    this.playSong.emit(song);
+  }
+  
+  formatDuration(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 }

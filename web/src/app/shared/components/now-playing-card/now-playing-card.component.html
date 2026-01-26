@@ -1,34 +1,107 @@
 <div class="now-playing-card">
-  <img [src]="cover()" alt="Cover" class="card-cover">
-  <div class="card-info">
+  <!-- Barra superior con label y ranking controls -->
+  <div class="card-header">
     <span class="card-label">Now Playing</span>
-    <span class="card-title">{{ title() }}</span>
-    <span class="card-artist">{{ artist() }}</span>
-  </div>
-  
-  <!-- Botón agregar a playlist -->
-  <div class="add-to-playlist">
-    <button class="add-btn" (click)="toggleDropdown()" title="Agregar a playlist">
-      <span class="material-icons">{{ showPlaylistDropdown() ? 'close' : 'playlist_add' }}</span>
-    </button>
     
-    @if (showPlaylistDropdown()) {
-      <div class="playlist-dropdown">
-        <span class="dropdown-title">Playlists:</span>
-        @for (playlist of playlists(); track playlist.id) {
+    <!-- Ranking controls -->
+    <div class="ranking-controls-wrapper">
+      @if (rankPosition()) {
+        <!-- Está rankeada: mostrar controles -->
+        <div class="ranking-controls">
+          <!-- Botón subir -->
           <button 
-            class="dropdown-item" 
-            [class.in-playlist]="playlist.hasSong"
-            (click)="onTogglePlaylist(playlist)"
+            class="rank-arrow-btn" 
+            [disabled]="rankPosition() === 1"
+            (click)="onMoveUp()"
           >
-            <span class="material-icons playlist-icon">{{ playlist.icon }}</span>
-            <span class="playlist-name">{{ playlist.name }}</span>
-            <span class="material-icons action-icon">
-              {{ playlist.hasSong ? 'remove_circle' : 'add_circle' }}
-            </span>
+            <span class="material-icons">keyboard_arrow_up</span>
+            <!-- Tooltip rico -->
+            @if (prevSong()) {
+              <div class="rank-tooltip rank-tooltip-up">
+                <span class="tooltip-action">Subir a #{{ rankPosition()! - 1 }}</span>
+                <div class="tooltip-song">
+                  <img [src]="prevSong()!.cover" alt="" class="tooltip-cover">
+                  <div class="tooltip-info">
+                    <span class="tooltip-title">{{ prevSong()!.title }}</span>
+                    <span class="tooltip-artist">{{ prevSong()!.artist }}</span>
+                  </div>
+                </div>
+              </div>
+            }
           </button>
-        }
-      </div>
-    }
+          
+          <!-- Posición actual -->
+          <span class="rank-position">#{{ rankPosition() }}</span>
+          
+          <!-- Botón bajar -->
+          <button 
+            class="rank-arrow-btn" 
+            [disabled]="rankPosition() === totalRanked()"
+            (click)="onMoveDown()"
+          >
+            <span class="material-icons">keyboard_arrow_down</span>
+            <!-- Tooltip rico -->
+            @if (nextSong()) {
+              <div class="rank-tooltip rank-tooltip-down">
+                <span class="tooltip-action">Bajar a #{{ rankPosition()! + 1 }}</span>
+                <div class="tooltip-song">
+                  <img [src]="nextSong()!.cover" alt="" class="tooltip-cover">
+                  <div class="tooltip-info">
+                    <span class="tooltip-title">{{ nextSong()!.title }}</span>
+                    <span class="tooltip-artist">{{ nextSong()!.artist }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </button>
+          
+          <!-- Botón quitar del ranking -->
+          <button class="rank-remove-btn" (click)="onRemoveFromRanking()" title="Quitar del ranking">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      } @else {
+        <!-- No está rankeada: mostrar botón para añadir -->
+        <button class="ranking-add-btn" (click)="onAddToRanking()">
+          <span class="material-icons">military_tech</span>
+          <span class="add-label">Sin ranking</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="card-content">
+    <img [src]="cover()" alt="Cover" class="card-cover">
+    <div class="card-info">
+      <span class="card-title">{{ title() }}</span>
+      <span class="card-artist">{{ artist() }}</span>
+    </div>
+    
+    <!-- Botón agregar a playlist -->
+    <div class="add-to-playlist">
+      <button class="add-btn" (click)="toggleDropdown()" title="Agregar a playlist">
+        <span class="material-icons">{{ showPlaylistDropdown() ? 'close' : 'playlist_add' }}</span>
+      </button>
+      
+      @if (showPlaylistDropdown()) {
+        <div class="playlist-dropdown">
+          <span class="dropdown-title">Playlists:</span>
+          @for (playlist of playlists(); track playlist.id) {
+            <button 
+              class="dropdown-item" 
+              [class.in-playlist]="playlist.hasSong"
+              (click)="onTogglePlaylist(playlist)"
+            >
+              <span class="material-icons playlist-icon">{{ playlist.icon }}</span>
+              <span class="playlist-name">{{ playlist.name }}</span>
+              <span class="material-icons action-icon">
+                {{ playlist.hasSong ? 'remove_circle' : 'add_circle' }}
+              </span>
+            </button>
+          }
+        </div>
+      }
+    </div>
   </div>
 </div>

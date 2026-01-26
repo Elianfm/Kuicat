@@ -9,9 +9,9 @@ import { CommonModule } from '@angular/common';
   styleUrl: './right-sidebar-controls.component.scss'
 })
 export class RightSidebarControlsComponent {
-  activeView = model<'playlist' | 'queue' | null>(null);
+  activeView = model<'playlist' | 'queue' | 'ranking' | null>(null);
   
-  toggle(view: 'playlist' | 'queue'): void {
+  toggle(view: 'playlist' | 'queue' | 'ranking'): void {
     this.activeView.update(current => current === view ? null : view);
   }
 }

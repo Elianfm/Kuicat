@@ -2,7 +2,6 @@ package com.kuicat.app.repository;
 
 import com.kuicat.app.entity.Playlist;
 import com.kuicat.app.entity.PlaylistSong;
-import com.kuicat.app.entity.Song;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

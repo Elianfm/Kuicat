@@ -3,8 +3,6 @@ package com.kuicat.app.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Entidad que representa una playlist.

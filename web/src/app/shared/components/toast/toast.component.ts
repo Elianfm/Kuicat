@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 export interface ToastMessage {
   id: number;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
 }
 
 @Injectable({
@@ -14,7 +14,7 @@ export class ToastService {
   private counter = 0;
   toasts = signal<ToastMessage[]>([]);
   
-  show(message: string, type: 'success' | 'error' | 'info' = 'success', duration = 3000): void {
+  show(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success', duration = 3000): void {
     const id = ++this.counter;
     this.toasts.update(toasts => [...toasts, { id, message, type }]);
     
@@ -33,6 +33,10 @@ export class ToastService {
   
   info(message: string): void {
     this.show(message, 'info');
+  }
+  
+  warning(message: string): void {
+    this.show(message, 'warning');
   }
 }
 

@@ -58,6 +58,16 @@
       color: $accent-primary;
     }
   }
+  
+  &.warning {
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba($warning, 0.2);
+    
+    .icon-wrapper {
+      color: $warning;
+    }
+  }
 }
 
 .icon-wrapper {

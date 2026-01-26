@@ -273,3 +273,250 @@
     color: $accent-primary;
   }
 }
+
+// ===================================
+// RANKING VIEW
+// ===================================
+
+.ranking-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $border-color;
+    
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: $spacing-xs;
+      color: $accent-primary;
+      margin: 0;
+      padding: 0;
+      border: none;
+      
+      .header-icon {
+        font-size: 24px;
+      }
+    }
+    
+    .ranking-count {
+      font-size: $font-size-sm;
+      color: $text-muted;
+    }
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-2xl 0;
+  color: $text-muted;
+  
+  .material-icons {
+    font-size: 32px;
+    margin-bottom: $spacing-sm;
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+}
+
+.ranking-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-2xl 0;
+  text-align: center;
+  
+  .material-icons {
+    font-size: 48px;
+    color: $accent-muted;
+    margin-bottom: $spacing-sm;
+  }
+  
+  p {
+    color: $text-secondary;
+    margin: 0 0 $spacing-xs;
+  }
+  
+  .hint {
+    font-size: $font-size-sm;
+    color: $text-muted;
+  }
+}
+
+.ranking-list {
+  flex: 1;
+  overflow-y: auto;
+  
+  // Scrollbar minimalista
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  
+  &:hover {
+    scrollbar-color: rgba($text-muted, 0.3) transparent;
+  }
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+  }
+  
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba($text-muted, 0.3);
+  }
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  border-radius: $border-radius;
+  cursor: pointer;
+  transition: all $transition-fast;
+  background: transparent;
+  
+  &:hover {
+    background: rgba($accent-primary, 0.1);
+    
+    .remove-btn {
+      opacity: 1;
+    }
+  }
+  
+  &.current {
+    background: rgba($accent-primary, 0.15);
+    border-left: 3px solid $accent-primary;
+    
+    .rank-position {
+      color: $accent-primary;
+    }
+  }
+  
+  &.cdk-drag-preview {
+    background: $bg-tertiary;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border-radius: $border-radius;
+  }
+  
+  &.cdk-drag-placeholder {
+    opacity: 0.4;
+    background: rgba($accent-primary, 0.2);
+  }
+}
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $text-muted;
+  cursor: grab;
+  
+  .material-icons {
+    font-size: 18px;
+  }
+  
+  &:hover {
+    color: $text-secondary;
+  }
+  
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.rank-position {
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $font-display;
+  font-size: $font-size-sm;
+  font-weight: 700;
+  color: $text-secondary;
+  background: rgba($bg-primary, 0.5);
+  border-radius: 6px;
+}
+
+.ranking-item .song-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  
+  .song-title {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $text-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .song-artist {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.ranking-item .song-duration {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  font-family: monospace;
+}
+
+.ranking-item .remove-btn {
+  opacity: 0;
+  background: transparent;
+  border: none;
+  color: $text-muted;
+  cursor: pointer;
+  padding: $spacing-xs;
+  border-radius: $border-radius;
+  transition: all $transition-fast;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .material-icons {
+    font-size: 16px;
+  }
+  
+  &:hover {
+    color: $error;
+    background: rgba($error, 0.1);
+  }
+}
+
+.cdk-drop-list-dragging .ranking-item:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
