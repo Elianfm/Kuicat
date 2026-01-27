@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ToastService } from '../toast/toast.component';
 import { ConfirmDialogService } from '../confirm-dialog/confirm-dialog.component';
 import { RankingService } from '../../../core/services/ranking.service';
+import { PlayerService } from '../../../core/services/player.service';
+import { Song } from '../../../models/song.model';
 
 interface Playlist {
   id: number;
@@ -32,6 +34,7 @@ export class NowPlayingCardComponent {
   private readonly elementRef = inject(ElementRef);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly rankingService = inject(RankingService);
+  private readonly playerService = inject(PlayerService);
   
   // Song data
   songId = input<number | null>(null);
@@ -44,6 +47,22 @@ export class NowPlayingCardComponent {
   prevSong = input<RankingNeighbor | null>(null);
   nextSong = input<RankingNeighbor | null>(null);
   totalRanked = input<number>(0);
+  
+  // Computed para usar el valor del servicio centralizado o el input
+  get effectiveTotalRanked(): number {
+    return this.totalRanked() || this.rankingService.totalRanked();
+  }
+  
+  // Obtener canciones vecinas desde el servicio centralizado
+  get prevNeighbor(): Song | null {
+    const pos = this.rankPosition();
+    return pos ? this.rankingService.getPreviousSong(pos) : null;
+  }
+  
+  get nextNeighbor(): Song | null {
+    const pos = this.rankPosition();
+    return pos ? this.rankingService.getNextSong(pos) : null;
+  }
   
   // Estado del dropdown
   showPlaylistDropdown = signal(false);
@@ -65,6 +84,11 @@ export class NowPlayingCardComponent {
     { id: 4, name: 'Workout', icon: 'fitness_center', hasSong: false },
     { id: 5, name: 'Road Trip', icon: 'directions_car', hasSong: true },
   ]);
+  
+  constructor() {
+    // Cargar el ranking al iniciar para tener los datos centralizados
+    this.rankingService.loadRanking();
+  }
   
   toggleDropdown(): void {
     this.showPlaylistDropdown.update(v => !v);
@@ -102,6 +126,7 @@ export class NowPlayingCardComponent {
     this.rankingService.addToRanking(id, 999).subscribe({
       next: () => {
         this.toastService.success('Añadida al ranking');
+        this.playerService.refreshVisibleSongs(); // Actualizar actual y siguiente
         this.rankingChanged.emit();
       },
       error: () => this.toastService.error('Error al añadir al ranking')
@@ -124,6 +149,7 @@ export class NowPlayingCardComponent {
       this.rankingService.removeFromRanking(id).subscribe({
         next: () => {
           this.toastService.success('Quitada del ranking');
+          this.playerService.refreshVisibleSongs(); // Actualizar actual y siguiente
           this.rankingChanged.emit();
         },
         error: () => this.toastService.error('Error al quitar del ranking')
@@ -139,6 +165,7 @@ export class NowPlayingCardComponent {
     
     this.rankingService.moveInRanking(id, pos - 1).subscribe({
       next: () => {
+        this.playerService.refreshVisibleSongs(); // Actualizar actual y siguiente
         this.rankingChanged.emit();
       },
       error: () => this.toastService.error('Error al mover en ranking')
@@ -149,10 +176,11 @@ export class NowPlayingCardComponent {
   onMoveDown(): void {
     const id = this.songId();
     const pos = this.rankPosition();
-    if (!id || !pos || pos >= this.totalRanked()) return;
+    if (!id || !pos || pos >= this.effectiveTotalRanked) return;
     
     this.rankingService.moveInRanking(id, pos + 1).subscribe({
       next: () => {
+        this.playerService.refreshVisibleSongs(); // Actualizar actual y siguiente
         this.rankingChanged.emit();
       },
       error: () => this.toastService.error('Error al mover en ranking')

@@ -19,12 +19,32 @@
   position: relative;
 }
 
-// Video
-.video-player {
+// Video / Audio player element
+.media-player {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
   background-color: #000;
+  z-index: 1;
+  
+  // Oculto por defecto
+  opacity: 0;
+  pointer-events: none;
+  
+  // Visible cuando es video
+  &.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  // Cuando es solo audio, mantenerlo oculto
+  &.audio-only {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 // Cover display (cuando no hay video)
@@ -36,6 +56,7 @@
   justify-content: center;
   background-color: $bg-primary;
   position: relative;
+  z-index: 2;
 }
 
 .cover-image {

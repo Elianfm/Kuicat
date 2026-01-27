@@ -2,6 +2,7 @@
 
 :host {
   display: block;
+  overflow: visible; // Permitir que tooltips sobresalgan del componente
 }
 
 .next-song-card {
@@ -12,7 +13,7 @@
   border: 1px solid $border-color;
   border-radius: $border-radius;
   min-width: 200px;
-  overflow: hidden;
+  // SIN overflow: hidden para que los tooltips se vean
 }
 
 // =====================
@@ -25,6 +26,8 @@
   padding: 6px $spacing-sm;
   background: rgba($bg-tertiary, 0.5);
   border-bottom: 1px solid rgba($border-color, 0.5);
+  border-radius: $border-radius $border-radius 0 0;
+  overflow: visible; // Permitir que tooltips sobresalgan
 }
 
 .card-label {
@@ -46,6 +49,8 @@
 .ranking-controls-wrapper {
   display: flex;
   align-items: center;
+  position: relative; // Para que los tooltips se posicionen correctamente
+  overflow: visible;
 }
 
 .ranking-controls {

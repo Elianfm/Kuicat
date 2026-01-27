@@ -153,11 +153,28 @@ Tabla: playlist_songs
   - DELETE /api/ranking/{id} (quitar del ranking)
 - [x] Rebalanceo automático cuando no hay espacio
 - [x] Frontend: `RankingService` Angular
+- [x] Campo `rankPosition` calculado dinámicamente en API de songs
+- [x] SQLite configurado con WAL mode para concurrencia
+
+### Frontend - Sincronización de Ranking
+- [x] `RankingService` centralizado con signals para estado reactivo
+- [x] Método `refreshVisibleSongs()` en PlayerService para actualizar actual y siguiente
+- [x] Tooltips ricos en ambas tarjetas (Now Playing y Next Song)
+- [x] Cambios de ranking sincronizan ambas tarjetas automáticamente
 
 ### Frontend - Campos Info Sidebar (ampliado)
 - [x] Campo Año editable (input type=number)
 - [x] Campo Descripción editable (textarea)
 - [x] Padding 24px para vista Info (separado de Lyrics)
+
+### Sistema de Reproducción Multimedia
+- [x] `MediaController` - Streaming de audio y video con Range requests
+- [x] `PlayerService` Angular - Servicio central de reproducción
+- [x] Soporte para formatos de video: MP4, WEBM
+- [x] `MusicScannerService` actualizado para escanear videos
+- [x] Integración PlayerBar con PlayerService
+- [x] MainView con soporte de video HTML5
+- [ ] **MKV**: Conversión manual con FFmpeg (no soportado nativamente por navegadores)
 
 ---
 
@@ -165,8 +182,9 @@ Tabla: playlist_songs
 
 ### 1. Gestión de Biblioteca Musical
 - [x] Seleccionar carpeta de música del PC (input en config modal)
-- [x] Escanear recursivamente archivos de audio
-- [x] Soportar formatos: MP3, FLAC, OGG, M4A, WAV, WMA, AAC, OPUS
+- [x] Escanear recursivamente archivos de audio y video
+- [x] Soportar formatos audio: MP3, FLAC, OGG, M4A, WAV, WMA, AAC, OPUS
+- [x] Soportar formatos video: MP4, WEBM
 - [x] Cargar metadata estándar desde archivos (JAudioTagger)
 - [x] Detección de archivos duplicados/movidos por hash
 - [x] Actualización incremental de biblioteca
@@ -195,9 +213,11 @@ Tabla: playlist_songs
   - Contexto: últimas canciones, puntuaciones, etiquetas
   - Sugerencia inteligente de siguiente canción
 
-### 5. Controles de Reproducción (Backend)
-- [ ] Reproducción real de audio
-- [ ] Control de archivos de audio
+### 5. Controles de Reproducción
+- [x] Reproducción real de audio/video (HTML5)
+- [x] Streaming con soporte de seeking (Range requests)
+- [x] PlayerService centralizado en Angular
+- [ ] Carátulas/thumbnails extraídas de los archivos
 - [ ] Lectura de metadata de archivos
 - [ ] API REST para el frontend
 
@@ -212,7 +232,7 @@ Tabla: playlist_songs
 - [x] Backend Spring Boot (estructura base)
 - [x] Configuración de SQLite
 - [x] Escaneo de carpeta y carga de archivos
-- [ ] Reproducción real de audio
+- [x] Reproducción real de audio
 - [x] API REST básica (songs, playlists, ranking, library)
 
 ### Fase 2: Gestión de Datos

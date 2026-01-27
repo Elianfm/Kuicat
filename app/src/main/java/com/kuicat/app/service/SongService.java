@@ -29,6 +29,7 @@ public class SongService {
     
     private final SongRepository songRepository;
     private final EntityMapper mapper;
+    private final RankingService rankingService;
     
     // ==================== CONSULTAS ====================
     
@@ -38,7 +39,14 @@ public class SongService {
     public SongDTO findById(Long id) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Canción", id));
-        return mapper.toSongDTO(song);
+        SongDTO dto = mapper.toSongDTO(song);
+        
+        // Calcular posición en ranking si tiene ranking
+        if (song.getRanking() != null) {
+            dto.setRankPosition(rankingService.calculatePosition(song.getRanking()));
+        }
+        
+        return dto;
     }
     
     /**
@@ -55,8 +63,14 @@ public class SongService {
         // Ejecutar consulta
         Page<Song> songPage = songRepository.findAll(spec, pageable);
         
-        // Mapear a DTOs
-        Page<SongDTO> dtoPage = songPage.map(mapper::toSongDTO);
+        // Mapear a DTOs y calcular rankPosition para canciones que tienen ranking
+        Page<SongDTO> dtoPage = songPage.map(song -> {
+            SongDTO dto = mapper.toSongDTO(song);
+            if (song.getRanking() != null) {
+                dto.setRankPosition(rankingService.calculatePosition(song.getRanking()));
+            }
+            return dto;
+        });
         return PageResponse.of(dtoPage);
     }
     

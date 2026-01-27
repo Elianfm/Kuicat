@@ -16,14 +16,14 @@
             (click)="onMoveUp()"
           >
             <span class="material-icons">keyboard_arrow_up</span>
-            @if (prevSong()) {
+            @if (prevNeighbor) {
               <div class="rank-tooltip rank-tooltip-up">
                 <span class="tooltip-action">Subir a #{{ rankPosition()! - 1 }}</span>
                 <div class="tooltip-song">
-                  <img [src]="prevSong()!.cover" alt="" class="tooltip-cover">
+                  <img src="img/default-cover.webp" alt="" class="tooltip-cover">
                   <div class="tooltip-info">
-                    <span class="tooltip-title">{{ prevSong()!.title }}</span>
-                    <span class="tooltip-artist">{{ prevSong()!.artist }}</span>
+                    <span class="tooltip-title">{{ prevNeighbor.title }}</span>
+                    <span class="tooltip-artist">{{ prevNeighbor.artist }}</span>
                   </div>
                 </div>
               </div>
@@ -34,18 +34,18 @@
           
           <button 
             class="rank-arrow-btn" 
-            [disabled]="rankPosition() === totalRanked()"
+            [disabled]="rankPosition() === effectiveTotalRanked"
             (click)="onMoveDown()"
           >
             <span class="material-icons">keyboard_arrow_down</span>
-            @if (nextSong()) {
+            @if (nextNeighbor) {
               <div class="rank-tooltip rank-tooltip-down">
                 <span class="tooltip-action">Bajar a #{{ rankPosition()! + 1 }}</span>
                 <div class="tooltip-song">
-                  <img [src]="nextSong()!.cover" alt="" class="tooltip-cover">
+                  <img src="img/default-cover.webp" alt="" class="tooltip-cover">
                   <div class="tooltip-info">
-                    <span class="tooltip-title">{{ nextSong()!.title }}</span>
-                    <span class="tooltip-artist">{{ nextSong()!.artist }}</span>
+                    <span class="tooltip-title">{{ nextNeighbor.title }}</span>
+                    <span class="tooltip-artist">{{ nextNeighbor.artist }}</span>
                   </div>
                 </div>
               </div>

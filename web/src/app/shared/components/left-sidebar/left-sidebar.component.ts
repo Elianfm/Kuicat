@@ -1,9 +1,13 @@
-import { Component, input, signal, output, inject } from '@angular/core';
+import { Component, input, signal, output, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../toast/toast.component';
+import { PlayerService } from '../../../core/services/player.service';
+import { Song } from '../../../models/song.model';
 
 interface SongInfo {
+  id: number | null;
   title: string;
   artist: string;
   album: string;
@@ -17,6 +21,7 @@ interface SongInfo {
   // Campos editables
   description: string;
   notes: string;
+  lyrics: string;
 }
 
 @Component({
@@ -28,6 +33,9 @@ interface SongInfo {
 })
 export class LeftSidebarComponent {
   private readonly toastService = inject(ToastService);
+  private readonly playerService = inject(PlayerService);
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = 'http://localhost:8741/api/songs';
   
   activeView = input<'lyrics' | 'info' | null>(null);
   
@@ -37,26 +45,28 @@ export class LeftSidebarComponent {
   // Evento para emitir cambios en las lyrics
   lyricsChange = output<string>();
   
-  // Lyrics de la canción (mock - en producción vendría del padre)
+  // Lyrics de la canción
   lyrics = signal<string>('');
   
   // Estado de edición de lyrics
   editingLyrics = signal<boolean>(false);
   lyricsEditValue = '';
   
-  // Info de la canción actual (mock - en producción vendría del padre)
+  // Info de la canción actual
   songInfo = signal<SongInfo>({
-    title: 'Nombre de la Canción',
-    artist: 'Artista',
-    album: 'Álbum',
-    year: 2024,
-    genre: 'Rock',
-    duration: '4:15',
-    rating: 7,
-    lastPlayed: new Date('2026-01-24T18:30:00'),
-    playCount: 47,
+    id: null,
+    title: 'Sin canción',
+    artist: 'Artista desconocido',
+    album: '',
+    year: null,
+    genre: '',
+    duration: '0:00',
+    rating: 0,
+    lastPlayed: null,
+    playCount: 0,
     description: '',
-    notes: ''
+    notes: '',
+    lyrics: ''
   });
   
   // Campo actualmente en edición
@@ -68,10 +78,79 @@ export class LeftSidebarComponent {
   // Hover sobre rating
   hoverRating = signal<number>(0);
   
+  constructor() {
+    // Efecto que actualiza la info cuando cambia la canción actual
+    effect(() => {
+      const currentSong = this.playerService.currentSong();
+      if (currentSong) {
+        this.updateSongInfo(currentSong);
+      } else {
+        this.resetSongInfo();
+      }
+    });
+    
+    // Efecto separado para actualizar la duración cuando esté disponible
+    effect(() => {
+      const duration = this.playerService.duration();
+      if (duration > 0) {
+        // Actualizar solo el campo duration sin resetear todo
+        this.songInfo.update(info => ({
+          ...info,
+          duration: this.formatDuration(duration)
+        }));
+      }
+    });
+  }
+  
+  private updateSongInfo(song: Song): void {
+    this.songInfo.set({
+      id: song.id,
+      title: song.title || 'Sin título',
+      artist: song.artist || 'Artista desconocido',
+      album: song.album || '',
+      year: song.year,
+      genre: song.genre || '',
+      duration: this.formatDuration(song.duration),
+      rating: song.rating || 0,
+      lastPlayed: song.lastPlayed ? new Date(song.lastPlayed) : null,
+      playCount: song.playCount || 0,
+      description: song.description || '',
+      notes: song.notes || '',
+      lyrics: song.lyrics || ''
+    });
+    this.lyrics.set(song.lyrics || '');
+  }
+  
+  private resetSongInfo(): void {
+    this.songInfo.set({
+      id: null,
+      title: 'Sin canción',
+      artist: 'Artista desconocido',
+      album: '',
+      year: null,
+      genre: '',
+      duration: '0:00',
+      rating: 0,
+      lastPlayed: null,
+      playCount: 0,
+      description: '',
+      notes: '',
+      lyrics: ''
+    });
+    this.lyrics.set('');
+  }
+  
+  private formatDuration(seconds: number): string {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+  
   // Iniciar edición de un campo
   startEditing(field: keyof SongInfo): void {
     // Campos no editables
-    if (field === 'duration' || field === 'rating' || field === 'lastPlayed' || field === 'playCount') return;
+    if (field === 'id' || field === 'duration' || field === 'rating' || field === 'lastPlayed' || field === 'playCount' || field === 'lyrics') return;
     this.editingField.set(field);
     const value = this.songInfo()[field];
     this.editValue = value !== null && value !== undefined ? String(value) : '';
@@ -94,13 +173,33 @@ export class LeftSidebarComponent {
   
   // Guardar cambios
   saveField(field: keyof SongInfo): void {
-    if (this.editValue.trim() && this.editValue !== this.songInfo()[field]) {
+    const songId = this.songInfo().id;
+    if (!songId) {
+      this.editingField.set(null);
+      return;
+    }
+    
+    const newValue = field === 'year' ? Number(this.editValue) : this.editValue.trim();
+    
+    if (newValue !== this.songInfo()[field]) {
+      // Actualizar localmente
       this.songInfo.update(info => ({
         ...info,
-        [field]: this.editValue.trim()
+        [field]: newValue
       }));
-      this.toastService.success(`${this.getFieldLabel(field)} actualizado`);
-      this.songInfoChange.emit({ [field]: this.editValue.trim() });
+      
+      // Enviar a la API
+      this.http.patch(`${this.apiUrl}/${songId}`, { [field]: newValue })
+        .subscribe({
+          next: () => {
+            this.toastService.success(`${this.getFieldLabel(field)} actualizado`);
+            this.songInfoChange.emit({ [field]: newValue } as Partial<SongInfo>);
+          },
+          error: (err) => {
+            this.toastService.error('Error al guardar');
+            console.error('Error updating song:', err);
+          }
+        });
     }
     this.editingField.set(null);
   }
@@ -121,14 +220,29 @@ export class LeftSidebarComponent {
   
   // Actualizar puntuación
   setRating(rating: number): void {
+    const songId = this.songInfo().id;
+    if (!songId) return;
+    
     this.songInfo.update(info => ({ ...info, rating }));
-    this.toastService.success(`Puntuación: ${rating}/10`);
-    this.songInfoChange.emit({ rating });
+    
+    // Enviar a la API
+    this.http.patch(`${this.apiUrl}/${songId}`, { rating })
+      .subscribe({
+        next: () => {
+          this.toastService.success(`Puntuación: ${rating}/10`);
+          this.songInfoChange.emit({ rating });
+        },
+        error: (err) => {
+          this.toastService.error('Error al guardar puntuación');
+          console.error('Error updating rating:', err);
+        }
+      });
   }
   
   // Obtener label del campo
   getFieldLabel(field: keyof SongInfo): string {
     const labels: Record<keyof SongInfo, string> = {
+      id: 'ID',
       title: 'Título',
       artist: 'Artista',
       album: 'Álbum',
@@ -139,7 +253,8 @@ export class LeftSidebarComponent {
       lastPlayed: 'Última reproducción',
       playCount: 'Reproducciones',
       description: 'Descripción',
-      notes: 'Notas'
+      notes: 'Notas',
+      lyrics: 'Letra'
     };
     return labels[field];
   }
@@ -154,11 +269,28 @@ export class LeftSidebarComponent {
   
   // Guardar lyrics
   saveLyrics(): void {
+    const songId = this.songInfo().id;
+    if (!songId) {
+      this.editingLyrics.set(false);
+      return;
+    }
+    
     const newLyrics = this.lyricsEditValue.trim();
     if (newLyrics !== this.lyrics()) {
       this.lyrics.set(newLyrics);
-      this.toastService.success('Letra guardada');
-      this.lyricsChange.emit(newLyrics);
+      
+      // Enviar a la API
+      this.http.patch(`${this.apiUrl}/${songId}`, { lyrics: newLyrics })
+        .subscribe({
+          next: () => {
+            this.toastService.success('Letra guardada');
+            this.lyricsChange.emit(newLyrics);
+          },
+          error: (err) => {
+            this.toastService.error('Error al guardar letra');
+            console.error('Error updating lyrics:', err);
+          }
+        });
     }
     this.editingLyrics.set(false);
   }

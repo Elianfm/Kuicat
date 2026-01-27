@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { PlayerBarComponent } from './features/player/player-bar.component';
 import { LeftSidebarComponent } from './shared/components/left-sidebar/left-sidebar.component';
 import { RightSidebarComponent } from './shared/components/right-sidebar/right-sidebar.component';
@@ -9,6 +10,16 @@ import { NextSongCardComponent } from './shared/components/next-song-card/next-s
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConfigModalComponent, AppConfig } from './shared/components/config-modal/config-modal.component';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
+import { PlayerService } from './core/services/player.service';
+import { Song } from './models/song.model';
+
+interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
 
 @Component({
   selector: 'app-root',
@@ -28,25 +39,18 @@ import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confi
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App {
+export class App implements OnInit {
+  private readonly http = inject(HttpClient);
+  private readonly playerService = inject(PlayerService);
+  
   // Estado de sidebars (controlado desde main-view)
   leftSidebar = signal<'lyrics' | 'info' | null>(null);
   rightSidebar = signal<'playlist' | 'queue' | 'ranking' | null>(null);
   
-  // Info de la canción actual (mock)
-  currentSong = signal({
-    title: 'Nombre de la Canción',
-    artist: 'Artista',
-    cover: 'img/default-cover.webp',
-    hasVideo: false
-  });
-  
-  // Info de la siguiente canción (mock)
-  nextSong = signal({
-    title: 'Siguiente Canción',
-    artist: 'Otro Artista',
-    cover: 'img/default-cover.webp'
-  });
+  // Desde PlayerService
+  currentSong = this.playerService.currentSong;
+  nextSong = this.playerService.nextSong;
+  isVideo = this.playerService.isVideo;
   
   // Estado del modal de configuración
   configModalOpen = signal(false);
@@ -55,6 +59,35 @@ export class App {
   appConfig = signal<AppConfig>({
     videosPath: ''
   });
+  
+  ngOnInit(): void {
+    // Cargar configuración de localStorage
+    const savedConfig = localStorage.getItem('kuicat-config');
+    if (savedConfig) {
+      this.appConfig.set(JSON.parse(savedConfig));
+    }
+    
+    // Cargar biblioteca al inicio
+    this.loadLibrary();
+  }
+  
+  /**
+   * Carga la biblioteca de canciones del backend.
+   */
+  private loadLibrary(): void {
+    this.http.get<PageResponse<Song>>('http://localhost:8741/api/songs?size=1000')
+      .subscribe({
+        next: (response) => {
+          if (response.content.length > 0) {
+            // Cargar todas las canciones en la queue
+            this.playerService.loadQueue(response.content, 0);
+          }
+        },
+        error: (err) => {
+          console.log('No hay canciones en la biblioteca o backend no disponible');
+        }
+      });
+  }
   
   // Abrir modal de configuración
   openConfigModal(): void {
@@ -69,7 +102,8 @@ export class App {
   // Guardar configuración
   onConfigChange(config: AppConfig): void {
     this.appConfig.set(config);
-    // TODO: Persistir en localStorage o backend
-    console.log('Config saved:', config);
+    localStorage.setItem('kuicat-config', JSON.stringify(config));
+    // Recargar biblioteca después de cambiar configuración
+    this.loadLibrary();
   }
 }

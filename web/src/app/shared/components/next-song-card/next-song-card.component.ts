@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ToastService } from '../toast/toast.component';
 import { ConfirmDialogService } from '../confirm-dialog/confirm-dialog.component';
 import { RankingService } from '../../../core/services/ranking.service';
+import { PlayerService } from '../../../core/services/player.service';
+import { Song } from '../../../models/song.model';
 
 /** Información mínima de canción vecina en ranking */
 export interface RankingNeighbor {
@@ -24,6 +26,7 @@ export class NextSongCardComponent {
   private readonly toastService = inject(ToastService);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly rankingService = inject(RankingService);
+  private readonly playerService = inject(PlayerService);
   
   // Song data
   songId = input<number | null>(null);
@@ -40,6 +43,27 @@ export class NextSongCardComponent {
   // Evento cuando el ranking cambia
   rankingChanged = output<void>();
   
+  // Computed para usar el valor del servicio centralizado o el input
+  get effectiveTotalRanked(): number {
+    return this.totalRanked() || this.rankingService.totalRanked();
+  }
+  
+  // Obtener canciones vecinas desde el servicio centralizado
+  get prevNeighbor(): Song | null {
+    const pos = this.rankPosition();
+    return pos ? this.rankingService.getPreviousSong(pos) : null;
+  }
+  
+  get nextNeighbor(): Song | null {
+    const pos = this.rankPosition();
+    return pos ? this.rankingService.getNextSong(pos) : null;
+  }
+  
+  constructor() {
+    // Cargar el ranking al iniciar para tener los datos centralizados
+    this.rankingService.loadRanking();
+  }
+  
   /** Añadir al ranking (al final) */
   onAddToRanking(): void {
     const id = this.songId();
@@ -48,6 +72,7 @@ export class NextSongCardComponent {
     this.rankingService.addToRanking(id, 999).subscribe({
       next: () => {
         this.toastService.success('Añadida al ranking');
+        this.playerService.refreshVisibleSongs(); // Actualizar actual y siguiente
         this.rankingChanged.emit();
       },
       error: () => this.toastService.error('Error al añadir al ranking')
@@ -70,6 +95,7 @@ export class NextSongCardComponent {
       this.rankingService.removeFromRanking(id).subscribe({
         next: () => {
           this.toastService.success('Quitada del ranking');
+          this.playerService.refreshVisibleSongs(); // Actualizar actual y siguiente
           this.rankingChanged.emit();
         },
         error: () => this.toastService.error('Error al quitar del ranking')
@@ -84,7 +110,10 @@ export class NextSongCardComponent {
     if (!id || !pos || pos <= 1) return;
     
     this.rankingService.moveInRanking(id, pos - 1).subscribe({
-      next: () => this.rankingChanged.emit(),
+      next: () => {
+        this.playerService.refreshVisibleSongs(); // Actualizar actual y siguiente
+        this.rankingChanged.emit();
+      },
       error: () => this.toastService.error('Error al mover en ranking')
     });
   }
@@ -93,10 +122,13 @@ export class NextSongCardComponent {
   onMoveDown(): void {
     const id = this.songId();
     const pos = this.rankPosition();
-    if (!id || !pos || pos >= this.totalRanked()) return;
+    if (!id || !pos || pos >= this.effectiveTotalRanked) return;
     
     this.rankingService.moveInRanking(id, pos + 1).subscribe({
-      next: () => this.rankingChanged.emit(),
+      next: () => {
+        this.playerService.refreshVisibleSongs(); // Actualizar actual y siguiente
+        this.rankingChanged.emit();
+      },
       error: () => this.toastService.error('Error al mover en ranking')
     });
   }

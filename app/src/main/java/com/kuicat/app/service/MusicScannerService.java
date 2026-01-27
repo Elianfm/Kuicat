@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 /**
  * Servicio para escanear carpetas de música y extraer metadatos.
  * Usa JAudioTagger para leer ID3 tags, Vorbis comments, etc.
+ * También soporta archivos de video (MP4, WEBM).
  */
 @Service
 @RequiredArgsConstructor
@@ -32,10 +33,23 @@ public class MusicScannerService {
     
     private final SongRepository songRepository;
     
-    // Extensiones de audio soportadas
-    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of(
+    // Extensiones de audio soportadas (JAudioTagger)
+    private static final Set<String> AUDIO_EXTENSIONS = Set.of(
         "mp3", "flac", "ogg", "m4a", "wav", "wma", "aac", "opus"
     );
+    
+    // Extensiones de video soportadas (HTML5 nativo)
+    private static final Set<String> VIDEO_EXTENSIONS = Set.of(
+        "mp4", "webm"
+    );
+    
+    // Todas las extensiones soportadas
+    private static final Set<String> SUPPORTED_EXTENSIONS;
+    static {
+        Set<String> all = new java.util.HashSet<>(AUDIO_EXTENSIONS);
+        all.addAll(VIDEO_EXTENSIONS);
+        SUPPORTED_EXTENSIONS = Set.copyOf(all);
+    }
     
     /**
      * Resultado del escaneo.
@@ -74,11 +88,11 @@ public class MusicScannerService {
         
         try (Stream<Path> paths = Files.walk(folder)) {
             paths.filter(Files::isRegularFile)
-                 .filter(this::isAudioFile)
+                 .filter(this::isMediaFile)
                  .forEach(path -> {
                      totalFiles.incrementAndGet();
                      try {
-                         ProcessResult result = processAudioFile(path);
+                         ProcessResult result = processMediaFile(path);
                          switch (result) {
                              case NEW -> newSongs.incrementAndGet();
                              case UPDATED -> updatedSongs.incrementAndGet();
@@ -113,9 +127,9 @@ public class MusicScannerService {
     private enum ProcessResult { NEW, UPDATED, SKIPPED }
     
     /**
-     * Procesa un archivo de audio individual.
+     * Procesa un archivo multimedia (audio o video).
      */
-    private ProcessResult processAudioFile(Path path) throws Exception {
+    private ProcessResult processMediaFile(Path path) throws Exception {
         String filePath = path.toAbsolutePath().toString();
         String fileHash = calculateFileHash(path);
         
@@ -143,23 +157,59 @@ public class MusicScannerService {
             return ProcessResult.UPDATED;
         }
         
-        // Crear nueva canción
+        // Crear nueva canción/video
         Song newSong = createSongFromFile(path, fileHash);
         songRepository.save(newSong);
-        log.debug("Nueva canción: {} - {}", newSong.getArtist(), newSong.getTitle());
+        log.debug("Nuevo archivo: {} - {}", newSong.getArtist(), newSong.getTitle());
         return ProcessResult.NEW;
     }
     
     /**
-     * Crea una nueva entidad Song a partir de un archivo de audio.
+     * Verifica si el archivo es de video.
+     */
+    private boolean isVideoFile(String extension) {
+        return VIDEO_EXTENSIONS.contains(extension.toLowerCase());
+    }
+    
+    /**
+     * Crea una nueva entidad Song a partir de un archivo multimedia.
+     * Para archivos de audio, extrae metadata con JAudioTagger.
+     * Para archivos de video, usa el nombre del archivo como título.
      */
     private Song createSongFromFile(Path path, String fileHash) throws Exception {
+        String fileName = path.getFileName().toString();
+        String extension = getExtension(fileName).toLowerCase();
+        
+        // Para videos, crear entrada básica sin metadata de audio
+        if (isVideoFile(extension)) {
+            return createVideoEntry(path, fileHash, fileName, extension);
+        }
+        
+        // Para audio, usar JAudioTagger
+        return createAudioEntry(path, fileHash, fileName, extension);
+    }
+    
+    /**
+     * Crea entrada para archivo de video.
+     */
+    private Song createVideoEntry(Path path, String fileHash, String fileName, String extension) {
+        return Song.builder()
+            .filePath(path.toAbsolutePath().toString())
+            .fileHash(fileHash)
+            .format(extension)
+            .title(getFileNameWithoutExtension(fileName))
+            .rating(0)
+            .playCount(0)
+            .build();
+    }
+    
+    /**
+     * Crea entrada para archivo de audio con metadata.
+     */
+    private Song createAudioEntry(Path path, String fileHash, String fileName, String extension) throws Exception {
         AudioFile audioFile = AudioFileIO.read(path.toFile());
         AudioHeader header = audioFile.getAudioHeader();
         Tag tag = audioFile.getTag();
-        
-        String fileName = path.getFileName().toString();
-        String extension = getExtension(fileName).toLowerCase();
         
         return Song.builder()
             .filePath(path.toAbsolutePath().toString())
@@ -187,15 +237,23 @@ public class MusicScannerService {
      * Actualiza una canción existente con los metadatos del archivo.
      */
     private void updateSongFromFile(Song song, Path path, String fileHash) throws Exception {
-        AudioFile audioFile = AudioFileIO.read(path.toFile());
-        AudioHeader header = audioFile.getAudioHeader();
-        Tag tag = audioFile.getTag();
-        
         String fileName = path.getFileName().toString();
         String extension = getExtension(fileName).toLowerCase();
         
         song.setFileHash(fileHash);
         song.setFormat(extension);
+        
+        // Para videos, solo actualizar datos básicos
+        if (isVideoFile(extension)) {
+            song.setTitle(getFileNameWithoutExtension(fileName));
+            return;
+        }
+        
+        // Para audio, extraer metadata completa
+        AudioFile audioFile = AudioFileIO.read(path.toFile());
+        AudioHeader header = audioFile.getAudioHeader();
+        Tag tag = audioFile.getTag();
+        
         song.setBitrate(header.getBitRateAsNumber() > 0 ? (int) header.getBitRateAsNumber() : null);
         song.setSampleRate(header.getSampleRateAsNumber());
         song.setDuration(header.getTrackLength());
@@ -217,9 +275,9 @@ public class MusicScannerService {
     }
     
     /**
-     * Verifica si un archivo es de audio soportado.
+     * Verifica si un archivo es multimedia soportado (audio o video).
      */
-    private boolean isAudioFile(Path path) {
+    private boolean isMediaFile(Path path) {
         String fileName = path.getFileName().toString();
         String extension = getExtension(fileName).toLowerCase();
         return SUPPORTED_EXTENSIONS.contains(extension);

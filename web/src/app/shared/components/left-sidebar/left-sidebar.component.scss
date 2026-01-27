@@ -40,7 +40,7 @@ $sidebar-width: 380px; // Más ancho para que las lyrics quepan mejor
   
   // Padding específico para vista de info
   &.info-view {
-    padding: 24px;
+    padding: 24px 12px 24px 24px; // Menos padding a la derecha
   }
 }
 

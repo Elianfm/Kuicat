@@ -1,6 +1,7 @@
-import { Component, input, output, signal, inject } from '@angular/core';
+import { Component, input, output, signal, inject, OnInit, OnDestroy, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { Subscription } from 'rxjs';
 import { ToastService } from '../toast/toast.component';
 import { RankingService } from '../../../core/services/ranking.service';
 import { Song } from '../../../models';
@@ -20,9 +21,10 @@ interface Playlist {
   templateUrl: './right-sidebar.component.html',
   styleUrl: './right-sidebar.component.scss'
 })
-export class RightSidebarComponent {
+export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
   private readonly toastService = inject(ToastService);
   private readonly rankingService = inject(RankingService);
+  private rankingChangedSub?: Subscription;
   
   activeView = input<'playlist' | 'queue' | 'ranking' | null>(null);
   currentSongId = input<number>(1); // ID de la canción actual
@@ -114,36 +116,39 @@ export class RightSidebarComponent {
   }
   
   // === RANKING ===
-  rankedSongs = signal<Song[]>([]);
-  loadingRanking = signal<boolean>(false);
+  // Usar el estado centralizado del RankingService
+  rankedSongs = this.rankingService.rankedSongs;
+  loadingRanking = this.rankingService.loading;
   
   // Evento para reproducir canción desde el ranking
   playSong = output<Song>();
   
-  ngOnChanges(): void {
+  ngOnInit(): void {
+    // Cargar ranking al iniciar si la vista está activa
     if (this.activeView() === 'ranking') {
-      this.loadRanking();
+      this.rankingService.loadRanking();
     }
-  }
-  
-  loadRanking(): void {
-    this.loadingRanking.set(true);
-    this.rankingService.getRankedSongs().subscribe({
-      next: (songs) => {
-        this.rankedSongs.set(songs.filter(s => s.rankPosition !== null));
-        this.loadingRanking.set(false);
-      },
-      error: () => {
-        this.loadingRanking.set(false);
-        this.toastService.error('Error al cargar ranking');
-      }
+    
+    // Suscribirse a cambios en el ranking para recargar automáticamente
+    this.rankingChangedSub = this.rankingService.rankingChanged$.subscribe(() => {
+      // El estado ya se actualiza en el servicio, no necesitamos hacer nada aquí
     });
   }
   
+  ngOnDestroy(): void {
+    this.rankingChangedSub?.unsubscribe();
+  }
+  
+  ngOnChanges(): void {
+    if (this.activeView() === 'ranking') {
+      this.rankingService.loadRanking();
+    }
+  }
+  
   onRankingDrop(event: CdkDragDrop<Song[]>): void {
+    // Actualizar visualmente de inmediato (optimistic update)
     const songs = [...this.rankedSongs()];
     moveItemInArray(songs, event.previousIndex, event.currentIndex);
-    this.rankedSongs.set(songs);
     
     const movedSong = songs[event.currentIndex];
     const newPosition = event.currentIndex + 1;
@@ -151,11 +156,11 @@ export class RightSidebarComponent {
     this.rankingService.moveInRanking(movedSong.id, newPosition).subscribe({
       next: () => {
         this.toastService.success(`"${movedSong.title}" movida a #${newPosition}`);
-        this.loadRanking();
+        // El servicio ya recarga automáticamente
       },
       error: () => {
         this.toastService.error('Error al mover canción');
-        this.loadRanking();
+        this.rankingService.loadRanking(); // Revertir al estado del servidor
       }
     });
   }
@@ -164,8 +169,8 @@ export class RightSidebarComponent {
     event.stopPropagation();
     this.rankingService.removeFromRanking(song.id).subscribe({
       next: () => {
-        this.rankedSongs.update(songs => songs.filter(s => s.id !== song.id));
         this.toastService.success(`"${song.title}" quitada del ranking`);
+        // El servicio ya actualiza automáticamente
       },
       error: () => {
         this.toastService.error('Error al quitar del ranking');

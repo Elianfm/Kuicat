@@ -134,13 +134,27 @@ public class SongController {
     // ==================== MODIFICACIONES ====================
     
     /**
-     * Actualiza los datos editables de una canción.
+     * Actualiza los datos editables de una canción (actualización completa).
      * 
      * PUT /api/songs/123
      * Body: { "title": "Nuevo título", "rating": 8 }
      */
     @PutMapping("/{id}")
     public ResponseEntity<SongDTO> update(
+            @PathVariable Long id,
+            @RequestBody SongUpdateDTO updateDTO
+    ) {
+        return ResponseEntity.ok(songService.update(id, updateDTO));
+    }
+    
+    /**
+     * Actualiza parcialmente los datos de una canción.
+     * 
+     * PATCH /api/songs/123
+     * Body: { "title": "Nuevo título" } o { "rating": 8 } o cualquier campo
+     */
+    @PatchMapping("/{id}")
+    public ResponseEntity<SongDTO> partialUpdate(
             @PathVariable Long id,
             @RequestBody SongUpdateDTO updateDTO
     ) {

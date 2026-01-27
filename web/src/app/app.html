@@ -6,9 +6,8 @@
     
     <!-- Vista principal (video/cover) -->
     <app-main-view 
-      [hasVideo]="currentSong().hasVideo"
-      [coverUrl]="currentSong().cover"
-      [songTitle]="currentSong().title"
+      [coverUrl]="currentSong()?.filePath ? 'img/default-cover.webp' : 'img/default-cover.webp'"
+      [songTitle]="currentSong()?.title || 'Sin canción'"
       [(leftSidebar)]="leftSidebar"
       [(rightSidebar)]="rightSidebar"
     />
@@ -20,15 +19,19 @@
   <!-- Cards flotantes (posicionadas respecto a la pantalla) -->
   <app-now-playing-card 
     class="floating-card-left"
-    [title]="currentSong().title" 
-    [artist]="currentSong().artist"
-    [cover]="currentSong().cover"
+    [songId]="currentSong()?.id || null"
+    [title]="currentSong()?.title || 'Sin canción'" 
+    [artist]="currentSong()?.artist || 'Artista desconocido'"
+    [cover]="'img/default-cover.webp'"
+    [rankPosition]="currentSong()?.rankPosition || null"
   />
   <app-next-song-card 
     class="floating-card-right"
-    [title]="nextSong().title" 
-    [artist]="nextSong().artist"
-    [cover]="nextSong().cover"
+    [songId]="nextSong()?.id || null"
+    [title]="nextSong()?.title || 'No hay siguiente'" 
+    [artist]="nextSong()?.artist || ''"
+    [cover]="'img/default-cover.webp'"
+    [rankPosition]="nextSong()?.rankPosition || null"
   />
   
   <!-- Player bar (aparece al hover) -->
