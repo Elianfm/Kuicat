@@ -196,9 +196,7 @@ public class MusicScannerService {
         return Song.builder()
             .filePath(path.toAbsolutePath().toString())
             .fileHash(fileHash)
-            .format(extension)
             .title(getFileNameWithoutExtension(fileName))
-            .rating(0)
             .playCount(0)
             .build();
     }
@@ -214,21 +212,13 @@ public class MusicScannerService {
         return Song.builder()
             .filePath(path.toAbsolutePath().toString())
             .fileHash(fileHash)
-            .format(extension)
-            .bitrate(header.getBitRateAsNumber() > 0 ? (int) header.getBitRateAsNumber() : null)
-            .sampleRate(header.getSampleRateAsNumber())
             .duration(header.getTrackLength())
             .title(getTagOrDefault(tag, FieldKey.TITLE, getFileNameWithoutExtension(fileName)))
             .artist(getTag(tag, FieldKey.ARTIST))
-            .albumArtist(getTag(tag, FieldKey.ALBUM_ARTIST))
             .album(getTag(tag, FieldKey.ALBUM))
             .year(parseYear(getTag(tag, FieldKey.YEAR)))
-            .trackNumber(parseInteger(getTag(tag, FieldKey.TRACK)))
-            .discNumber(parseInteger(getTag(tag, FieldKey.DISC_NO)))
             .genre(getTag(tag, FieldKey.GENRE))
-            .composer(getTag(tag, FieldKey.COMPOSER))
             .lyrics(getTag(tag, FieldKey.LYRICS))
-            .rating(0)
             .playCount(0)
             .build();
     }
@@ -241,7 +231,6 @@ public class MusicScannerService {
         String extension = getExtension(fileName).toLowerCase();
         
         song.setFileHash(fileHash);
-        song.setFormat(extension);
         
         // Para videos, solo actualizar datos básicos
         if (isVideoFile(extension)) {
@@ -254,18 +243,12 @@ public class MusicScannerService {
         AudioHeader header = audioFile.getAudioHeader();
         Tag tag = audioFile.getTag();
         
-        song.setBitrate(header.getBitRateAsNumber() > 0 ? (int) header.getBitRateAsNumber() : null);
-        song.setSampleRate(header.getSampleRateAsNumber());
         song.setDuration(header.getTrackLength());
         song.setTitle(getTagOrDefault(tag, FieldKey.TITLE, getFileNameWithoutExtension(fileName)));
         song.setArtist(getTag(tag, FieldKey.ARTIST));
-        song.setAlbumArtist(getTag(tag, FieldKey.ALBUM_ARTIST));
         song.setAlbum(getTag(tag, FieldKey.ALBUM));
         song.setYear(parseYear(getTag(tag, FieldKey.YEAR)));
-        song.setTrackNumber(parseInteger(getTag(tag, FieldKey.TRACK)));
-        song.setDiscNumber(parseInteger(getTag(tag, FieldKey.DISC_NO)));
         song.setGenre(getTag(tag, FieldKey.GENRE));
-        song.setComposer(getTag(tag, FieldKey.COMPOSER));
         
         // Solo actualizar lyrics si no hay lyrics personalizadas
         String fileLyrics = getTag(tag, FieldKey.LYRICS);

@@ -29,11 +29,14 @@ Tabla: songs
 - id (PK, auto-increment)
 - file_path (ruta completa del archivo)
 - file_hash (hash del contenido para detectar duplicados/movimientos)
-- rating (puntuación del usuario, 1-10)
-- user_tags (etiquetas personalizadas, separadas por comas)
-- times_played (contador de reproducciones)
+- title, artist, album, year, genre, duration (metadata del archivo)
+- description (descripción del usuario)
+- ranking (posición en ranking personal, null = sin rankear)
+- play_count (contador de reproducciones)
 - last_played (fecha última reproducción)
-- created_at (fecha de agregado)
+- notes (notas del usuario)
+- lyrics (letra de la canción)
+- created_at, updated_at (timestamps)
 
 Tabla: playlists
 - id (PK)
@@ -99,12 +102,18 @@ Tabla: playlist_songs
 - [x] Estilos con transparencia y glow
 
 ### Frontend - Sidebar de Info Editable
-- [x] Campos editables inline (título, artista, álbum, género)
+- [x] Campos editables inline (título, artista, álbum, género, año)
 - [x] Clic para editar, Enter/Escape/blur para guardar/cancelar
 - [x] Icono de edición aparece al hover
-- [x] Puntuación interactiva 1-10 con estrellas
-- [x] Estadísticas automáticas (reproducciones, última reproducción)
-- [x] Campo de notas editable (textarea)
+- [x] Posición en ranking con icono de trofeo 🏆
+- [x] Estadísticas automáticas:
+  - [x] Reproducciones
+  - [x] Última reproducción
+  - [x] Tiempo total escuchado (playCount × duration)
+  - [x] Posición por reproducciones (#X de Y)
+  - [x] Frecuencia de escucha (veces/día o veces/semana)
+- [x] Campo de descripción editable (debajo de artista)
+- [x] Campo de notas editable (textarea al final)
 - [x] Toast de confirmación al guardar
 
 ### Frontend - Sidebar de Lyrics
@@ -203,12 +212,13 @@ Tabla: playlist_songs
 - [ ] Limpieza automática de archivos eliminados (cleanup)
 - [ ] Progreso del escaneo en tiempo real (websockets)
 
-### 2. Sistema de Puntuaciones y Ranking
-- [x] Puntuaciones manuales del usuario (1-10 estrellas)
+### 2. Sistema de Ranking Personal
 - [x] Sistema de ranking personal con posiciones
+- [x] Icono de trofeo 🏆 en Now Playing, Next Song e Info sidebar
 - [x] API de ranking con inserciones eficientes O(1)
 - [x] UI para gestionar ranking (drag & drop en sidebar, botones ▲▼ en cards)
 - [x] Vista "Ranking" en sidebar derecho con lista ordenada
+- [x] Eliminado campo rating (puntuación 1-10) - reemplazado por ranking
 
 ### 3. Playlists Dinámicas
 - [ ] Crear playlists por **género**
@@ -257,9 +267,10 @@ Tabla: playlist_songs
 - [x] API REST básica (songs, playlists, ranking, library)
 
 ### Fase 2: Gestión de Datos
-- [x] Sistema de puntuaciones (1-10 estrellas)
-- [x] Sistema de ranking personal
-- [x] Edición de metadata personalizada (año, descripción, notas)
+- [x] Sistema de ranking personal (reemplaza puntuación 1-10)
+- [x] Edición de metadata personalizada (año, descripción, notas, lyrics)
+- [x] Estadísticas automáticas de escucha
+- [x] Modelo de datos simplificado (eliminados campos no usados: format, bitrate, sampleRate, albumArtist, trackNumber, discNumber, composer, coverPath)
 - [ ] Sistema de etiquetas personalizables
 - [ ] Búsqueda y filtrado avanzado
 

@@ -36,12 +36,6 @@ public class Song {
     @Column(nullable = false)
     private String fileHash; // Hash MD5 para detectar duplicados/movimientos
     
-    private String format;      // mp3, flac, wav, etc.
-    
-    private Integer bitrate;    // en kbps
-    
-    private Integer sampleRate; // en Hz
-    
     // === Metadata estándar (leída del archivo) ===
     
     @Column(nullable = false)
@@ -49,32 +43,18 @@ public class Song {
     
     private String artist;
     
-    private String albumArtist; // Artista del álbum (puede diferir)
-    
     private String album;
     
     private Integer year;       // Año de lanzamiento
     
-    private Integer trackNumber; // Número de pista
-    
-    private Integer discNumber;  // Número de disco
-    
     private String genre;
     
-    private String composer;     // Compositor
-    
     private Integer duration;    // en segundos
-    
-    private String coverPath;    // Ruta a la carátula extraída
     
     // === Datos personalizados del usuario ===
     
     @Column(columnDefinition = "TEXT")
     private String description;  // Descripción/comentarios del usuario
-    
-    @Column(columnDefinition = "INTEGER DEFAULT 0")
-    @Builder.Default
-    private Integer rating = 0; // 1-10, 0 = sin calificar
     
     /**
      * Ranking personal del usuario (posición interna con gaps).

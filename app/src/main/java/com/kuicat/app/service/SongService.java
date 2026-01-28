@@ -155,25 +155,6 @@ public class SongService {
     }
     
     /**
-     * Actualiza el rating de una canción.
-     */
-    @Transactional
-    public SongDTO updateRating(Long id, Integer rating) {
-        if (rating != null && (rating < 1 || rating > 10)) {
-            throw new IllegalArgumentException("Rating debe estar entre 1 y 10");
-        }
-        
-        Song song = songRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Canción", id));
-        
-        song.setRating(rating);
-        Song saved = songRepository.save(song);
-        
-        log.info("Rating actualizado: {} = {}", saved.getTitle(), rating);
-        return mapper.toSongDTO(saved);
-    }
-    
-    /**
      * Actualiza las letras de una canción.
      */
     @Transactional

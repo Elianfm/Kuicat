@@ -27,7 +27,6 @@ public class EntityMapper {
                 .genre(song.getGenre())
                 .duration(song.getDuration())
                 .description(song.getDescription())
-                .rating(song.getRating())
                 .ranking(song.getRanking())
                 .rankPosition(null) // Se calcula en el servicio
                 .playCount(song.getPlayCount())
@@ -52,7 +51,6 @@ public class EntityMapper {
         if (dto.getYear() != null) song.setYear(dto.getYear());
         if (dto.getGenre() != null) song.setGenre(dto.getGenre());
         if (dto.getDescription() != null) song.setDescription(dto.getDescription());
-        if (dto.getRating() != null) song.setRating(dto.getRating());
         if (dto.getNotes() != null) song.setNotes(dto.getNotes());
         if (dto.getLyrics() != null) song.setLyrics(dto.getLyrics());
     }

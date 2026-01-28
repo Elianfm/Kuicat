@@ -271,6 +271,72 @@ $sidebar-width: 380px; // Más ancho para que las lyrics quepan mejor
       color: $accent-primary;
     }
   }
+  
+  // Ranking item
+  &.ranking-item {
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-md;
+    
+    .ranking-display {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      
+      .trophy-icon {
+        font-size: 18px;
+        color: #FFD700; // Dorado
+      }
+    }
+    
+    .ranking-position {
+      font-family: $font-display;
+      font-size: $font-size-lg;
+      font-weight: 600;
+      color: $text-primary;
+      line-height: 1;
+    }
+    
+    .ranking-total {
+      font-size: $font-size-sm;
+      color: $text-muted;
+    }
+    
+    .ranking-empty {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      
+      .not-ranked {
+        font-size: $font-size-base;
+        color: $text-muted;
+        font-style: italic;
+      }
+      
+      .add-to-ranking-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        background: transparent;
+        border: 1px solid rgba($accent-primary, 0.3);
+        border-radius: $border-radius;
+        color: $accent-primary;
+        font-size: $font-size-sm;
+        cursor: pointer;
+        transition: all $transition-fast;
+        
+        .material-icons-round {
+          font-size: 16px;
+        }
+        
+        &:hover {
+          background: rgba($accent-primary, 0.1);
+          border-color: $accent-primary;
+        }
+      }
+    }
+  }
 }
 
 .info-label {
@@ -329,47 +395,6 @@ $sidebar-width: 380px; // Más ancho para que las lyrics quepan mejor
   &:focus {
     box-shadow: 0 0 0 2px rgba($accent-primary, 0.2);
   }
-}
-
-// Puntuación interactiva
-.rating-item {
-  .info-label {
-    margin-bottom: $spacing-xs;
-  }
-}
-
-.rating-container {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-wrap: wrap;
-}
-
-.rating-star {
-  font-size: 20px;
-  color: $text-muted;
-  cursor: pointer;
-  transition: all $transition-fast;
-  line-height: 1;
-  
-  &.filled {
-    color: $accent-primary;
-  }
-  
-  &.hover {
-    transform: scale(1.2);
-  }
-  
-  &:hover {
-    transform: scale(1.3);
-  }
-}
-
-.rating-value {
-  font-family: $font-display;
-  font-size: $font-size-sm;
-  color: $text-muted;
-  margin-left: $spacing-sm;
 }
 
 // Separador

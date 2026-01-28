@@ -1,9 +1,11 @@
-import { Component, input, signal, output, inject, effect } from '@angular/core';
+import { Component, input, signal, output, inject, effect, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../toast/toast.component';
 import { PlayerService } from '../../../core/services/player.service';
+import { RankingService } from '../../../core/services/ranking.service';
+import { LibraryService } from '../../../core/services/library.service';
 import { Song } from '../../../models/song.model';
 
 interface SongInfo {
@@ -14,7 +16,6 @@ interface SongInfo {
   year: number | null;
   genre: string;
   duration: string;
-  rating: number;
   // Campos automáticos (no editables)
   lastPlayed: Date | null;
   playCount: number;
@@ -31,11 +32,16 @@ interface SongInfo {
   templateUrl: './left-sidebar.component.html',
   styleUrl: './left-sidebar.component.scss'
 })
-export class LeftSidebarComponent {
+export class LeftSidebarComponent implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly playerService = inject(PlayerService);
   private readonly http = inject(HttpClient);
+  private readonly rankingService = inject(RankingService);
+  private readonly libraryService = inject(LibraryService);
   private readonly apiUrl = 'http://localhost:8741/api/songs';
+  
+  // Todas las canciones de la biblioteca (para calcular stats)
+  private readonly allSongs = signal<Song[]>([]);
   
   activeView = input<'lyrics' | 'info' | null>(null);
   
@@ -61,7 +67,6 @@ export class LeftSidebarComponent {
     year: null,
     genre: '',
     duration: '0:00',
-    rating: 0,
     lastPlayed: null,
     playCount: 0,
     description: '',
@@ -75,8 +80,94 @@ export class LeftSidebarComponent {
   // Valor temporal durante edición
   editValue = '';
   
-  // Hover sobre rating
-  hoverRating = signal<number>(0);
+  // Señales computed para ranking
+  readonly rankPosition = computed(() => {
+    const song = this.playerService.currentSong();
+    if (!song) return null;
+    const songs = this.rankingService.rankedSongs();
+    const index = songs.findIndex(s => s.id === song.id);
+    return index >= 0 ? index + 1 : null;
+  });
+  
+  readonly totalRanked = computed(() => this.rankingService.rankedSongs().length);
+  
+  // === STATS COMPUTADAS ===
+  
+  // Tiempo total escuchado = playCount × duration
+  readonly totalListenTime = computed(() => {
+    const info = this.songInfo();
+    const currentSong = this.playerService.currentSong();
+    if (!currentSong) return null;
+    
+    const totalSeconds = info.playCount * currentSong.duration;
+    return this.formatTotalTime(totalSeconds);
+  });
+  
+  // Posición por reproducciones (comparado con toda la biblioteca)
+  readonly playCountPosition = computed(() => {
+    const currentSong = this.playerService.currentSong();
+    const songs = this.allSongs();
+    if (!currentSong || songs.length === 0) return null;
+    
+    // Ordenar por playCount descendente
+    const sorted = [...songs].sort((a, b) => b.playCount - a.playCount);
+    const position = sorted.findIndex(s => s.id === currentSong.id) + 1;
+    return position > 0 ? { position, total: songs.length } : null;
+  });
+  
+  // Frecuencia de escucha = playCount / días desde que se añadió
+  readonly listenFrequency = computed(() => {
+    const info = this.songInfo();
+    const currentSong = this.playerService.currentSong();
+    if (!currentSong?.createdAt) return null;
+    
+    const createdDate = new Date(currentSong.createdAt);
+    const now = new Date();
+    const daysSinceAdded = Math.max(1, Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const playCount = info.playCount;
+    
+    // Calcular frecuencia de escucha y generar texto descriptivo
+    if (playCount === 0) {
+      return { text: 'Sin reproducciones' };
+    }
+    
+    const playsPerDay = playCount / daysSinceAdded;
+    
+    if (playsPerDay >= 1) {
+      // 1 o más veces por día
+      const rounded = Math.round(playsPerDay * 10) / 10;
+      const veces = rounded === 1 ? 'vez' : 'veces';
+      return { text: `~${rounded} ${veces}/día` };
+    } else if (playsPerDay >= 1/7) {
+      // Entre 1/día y 1/semana -> mostrar por semana
+      const playsPerWeek = playsPerDay * 7;
+      const rounded = Math.round(playsPerWeek * 10) / 10;
+      const veces = rounded === 1 ? 'vez' : 'veces';
+      return { text: `~${rounded} ${veces}/semana` };
+    } else {
+      // Menos de 1/semana -> mostrar cada cuántos días
+      const daysPerPlay = Math.round(daysSinceAdded / playCount);
+      return { text: `1 vez cada ~${daysPerPlay} días` };
+    }
+  });
+  
+  // Helper para formatear el tiempo total
+  private formatTotalTime(totalSeconds: number): string {
+    if (!totalSeconds || totalSeconds <= 0) return '0 min';
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    
+    if (hours === 0) {
+      return `${minutes} min`;
+    } else if (hours < 24) {
+      return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+    } else {
+      const days = Math.floor(hours / 24);
+      const remainingHours = hours % 24;
+      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+    }
+  }
   
   constructor() {
     // Efecto que actualiza la info cuando cambia la canción actual
@@ -102,6 +193,18 @@ export class LeftSidebarComponent {
     });
   }
   
+  ngOnInit(): void {
+    // Cargar todas las canciones para calcular stats
+    this.loadAllSongs();
+  }
+  
+  private loadAllSongs(): void {
+    this.libraryService.getAllSongs().subscribe({
+      next: (songs) => this.allSongs.set(songs),
+      error: (err) => console.error('Error loading songs for stats:', err)
+    });
+  }
+  
   private updateSongInfo(song: Song): void {
     this.songInfo.set({
       id: song.id,
@@ -111,7 +214,6 @@ export class LeftSidebarComponent {
       year: song.year,
       genre: song.genre || '',
       duration: this.formatDuration(song.duration),
-      rating: song.rating || 0,
       lastPlayed: song.lastPlayed ? new Date(song.lastPlayed) : null,
       playCount: song.playCount || 0,
       description: song.description || '',
@@ -130,7 +232,6 @@ export class LeftSidebarComponent {
       year: null,
       genre: '',
       duration: '0:00',
-      rating: 0,
       lastPlayed: null,
       playCount: 0,
       description: '',
@@ -150,7 +251,7 @@ export class LeftSidebarComponent {
   // Iniciar edición de un campo
   startEditing(field: keyof SongInfo): void {
     // Campos no editables
-    if (field === 'id' || field === 'duration' || field === 'rating' || field === 'lastPlayed' || field === 'playCount' || field === 'lyrics') return;
+    if (field === 'id' || field === 'duration' || field === 'lastPlayed' || field === 'playCount' || field === 'lyrics') return;
     this.editingField.set(field);
     const value = this.songInfo()[field];
     this.editValue = value !== null && value !== undefined ? String(value) : '';
@@ -220,27 +321,22 @@ export class LeftSidebarComponent {
     }
   }
   
-  // Actualizar puntuación
-  setRating(rating: number): void {
-    const songId = this.songInfo().id;
-    if (!songId) return;
+  // Añadir canción al ranking
+  addToRanking(): void {
+    const currentSong = this.playerService.currentSong();
+    if (!currentSong) return;
     
-    this.songInfo.update(info => ({ ...info, rating }));
-    
-    // Enviar a la API
-    this.http.patch(`${this.apiUrl}/${songId}`, { rating })
-      .subscribe({
-        next: () => {
-          this.toastService.success(`Puntuación: ${rating}/10`);
-          // Actualizar también en el PlayerService
-          this.playerService.updateCurrentSong({ rating });
-          this.songInfoChange.emit({ rating });
-        },
-        error: (err) => {
-          this.toastService.error('Error al guardar puntuación');
-          console.error('Error updating rating:', err);
-        }
-      });
+    // Añadir al final del ranking (posición = total + 1)
+    const position = this.totalRanked() + 1;
+    this.rankingService.addToRanking(currentSong.id, position).subscribe({
+      next: () => {
+        this.toastService.success('Canción añadida al ranking');
+      },
+      error: (err) => {
+        console.error('Error adding to ranking:', err);
+        this.toastService.error('Error al añadir al ranking');
+      }
+    });
   }
   
   // Obtener label del campo
@@ -253,7 +349,6 @@ export class LeftSidebarComponent {
       year: 'Año',
       genre: 'Género',
       duration: 'Duración',
-      rating: 'Puntuación',
       lastPlayed: 'Última reproducción',
       playCount: 'Reproducciones',
       description: 'Descripción',

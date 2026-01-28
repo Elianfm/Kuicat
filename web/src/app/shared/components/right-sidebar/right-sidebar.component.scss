@@ -631,18 +631,169 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
+}
+
+// Header con contexto
+.queue-header {
+  padding: $spacing-md $spacing-sm;
+  border-bottom: 1px solid $border-color;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.queue-source {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
   
-  .sidebar-header h3 {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
+  .source-icon {
+    font-size: 20px;
+    color: $accent-primary;
+  }
+  
+  .source-text {
+    font-family: $font-display;
+    font-size: $font-size-base;
+    color: $text-primary;
+  }
+}
+
+.queue-mode {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  
+  .mode-icon {
+    font-size: 14px;
+    color: $text-muted;
+  }
+  
+  .mode-text {
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+}
+
+// Sección de canción actual
+.now-playing-section {
+  padding: $spacing-sm;
+  border-bottom: 1px solid $border-color;
+  
+  .section-label {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: $spacing-xs;
+    display: block;
+  }
+}
+
+.now-playing-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  background: rgba($accent-primary, 0.1);
+  border-radius: $border-radius;
+  border-left: 3px solid $accent-primary;
+}
+
+.now-playing-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.now-playing-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.now-playing-title {
+  font-size: $font-size-sm;
+  color: $accent-primary;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-playing-artist {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playing-indicator {
+  color: $accent-primary;
+  font-size: 20px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+// Tabs de navegación
+.queue-tabs {
+  display: flex;
+  border-bottom: 1px solid $border-color;
+  
+  .tab-btn {
+    flex: 1;
+    padding: $spacing-sm;
+    background: transparent;
+    border: none;
+    color: $text-muted;
+    font-family: $font-body;
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+    position: relative;
     
-    .header-icon {
-      font-size: 22px;
-      line-height: 1;
-      display: flex;
-      align-items: center;
+    &:hover {
+      color: $text-primary;
+      background: rgba($accent-primary, 0.05);
     }
+    
+    &.active {
+      color: $accent-primary;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: $accent-primary;
+      }
+    }
+  }
+}
+
+// Lista de anteriores
+.previous-list {
+  .queue-item {
+    padding-left: $spacing-md; // Sin drag handle, más padding
+  }
+}
+
+.previous-item {
+  opacity: 0.7;
+  
+  &:hover {
+    opacity: 1;
   }
 }
 

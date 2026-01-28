@@ -153,49 +153,114 @@
   
   @if (activeView() === 'queue') {
     <div class="sidebar-content queue-view">
-      <div class="sidebar-header">
-        <h3>
-          <span class="material-icons header-icon">queue_music</span>
-          Cola de reproducción
-        </h3>
-        <span class="queue-count">{{ upcomingSongs.length }} pendientes</span>
+      <!-- Header con contexto -->
+      <div class="queue-header">
+        <div class="queue-source">
+          <span class="material-icons source-icon">{{ getQueueSourceIcon() }}</span>
+          <span class="source-text">{{ getQueueSourceLabel() }}</span>
+        </div>
+        @if (playerService.playMode() !== 'sequential') {
+          <div class="queue-mode">
+            <span class="material-icons mode-icon">{{ getPlayModeIcon() }}</span>
+            <span class="mode-text">{{ getPlayModeLabel() }}</span>
+          </div>
+        }
       </div>
       
-      @if (upcomingSongs.length === 0) {
-        <div class="queue-empty">
-          <span class="material-icons">playlist_play</span>
-          <p>No hay más canciones</p>
-          <span class="hint">Añade música desde la biblioteca</span>
-        </div>
-      } @else {
-        <p class="queue-label">A continuación:</p>
-        <div class="queue-list" cdkDropList (cdkDropListDropped)="onQueueDrop($event)">
-          @for (song of upcomingSongs; track song.id; let i = $index) {
-            <div 
-              class="queue-item" 
-              cdkDrag
-              [class.next]="i === 0"
-              (click)="onPlayFromQueue(song.queueIndex)"
-            >
-              <div class="drag-handle" cdkDragHandle>
-                <span class="material-icons">drag_indicator</span>
-              </div>
-              <img [src]="getCoverUrl(song)" alt="" class="queue-cover">
-              <div class="queue-info">
-                <span class="queue-title">{{ song.title }}</span>
-                <span class="queue-artist">{{ song.artist }}</span>
-              </div>
-              <span class="queue-duration">{{ formatDuration(song.duration) }}</span>
-              <button 
-                class="remove-btn" 
-                (click)="onRemoveFromQueue(song.queueIndex, $event)"
-                title="Quitar de la cola"
-              >
-                <span class="material-icons">close</span>
-              </button>
+      <!-- Canción actual destacada -->
+      @if (playerService.currentSong(); as currentSong) {
+        <div class="now-playing-section">
+          <span class="section-label">Reproduciendo ahora</span>
+          <div class="now-playing-item">
+            <img [src]="getCoverUrl(currentSong)" alt="" class="now-playing-cover">
+            <div class="now-playing-info">
+              <span class="now-playing-title">{{ currentSong.title }}</span>
+              <span class="now-playing-artist">{{ currentSong.artist }}</span>
             </div>
-          }
+            <span class="material-icons playing-indicator">equalizer</span>
+          </div>
         </div>
+      }
+      
+      <!-- Tabs Siguientes / Anteriores -->
+      <div class="queue-tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="queueTab() === 'upcoming'"
+          (click)="queueTab.set('upcoming')"
+        >
+          Siguientes ({{ upcomingSongs().length }})
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="queueTab() === 'previous'"
+          (click)="queueTab.set('previous')"
+        >
+          Anteriores ({{ previousSongs().length }})
+        </button>
+      </div>
+      
+      <!-- Lista de canciones según tab -->
+      @if (queueTab() === 'upcoming') {
+        @if (upcomingSongs().length === 0) {
+          <div class="queue-empty">
+            <span class="material-icons">playlist_play</span>
+            <p>No hay más canciones</p>
+            <span class="hint">Añade música desde la biblioteca</span>
+          </div>
+        } @else {
+          <div class="queue-list" cdkDropList (cdkDropListDropped)="onQueueDrop($event)">
+            @for (song of upcomingSongs(); track song.id; let i = $index) {
+              <div 
+                class="queue-item" 
+                cdkDrag
+                [class.next]="i === 0"
+                (click)="onPlayFromQueue(song.queueIndex)"
+              >
+                <div class="drag-handle" cdkDragHandle>
+                  <span class="material-icons">drag_indicator</span>
+                </div>
+                <img [src]="getCoverUrl(song)" alt="" class="queue-cover">
+                <div class="queue-info">
+                  <span class="queue-title">{{ song.title }}</span>
+                  <span class="queue-artist">{{ song.artist }}</span>
+                </div>
+                <span class="queue-duration">{{ formatDuration(song.duration) }}</span>
+                <button 
+                  class="remove-btn" 
+                  (click)="onRemoveFromQueue(song.queueIndex, $event)"
+                  title="Quitar de la cola"
+                >
+                  <span class="material-icons">close</span>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      } @else {
+        @if (previousSongs().length === 0) {
+          <div class="queue-empty">
+            <span class="material-icons">history</span>
+            <p>No hay canciones anteriores</p>
+            <span class="hint">Aquí aparecerán las canciones que ya escuchaste</span>
+          </div>
+        } @else {
+          <div class="queue-list previous-list">
+            @for (song of previousSongs(); track song.id; let i = $index) {
+              <div 
+                class="queue-item previous-item" 
+                (click)="onPlayFromQueue(song.queueIndex)"
+              >
+                <img [src]="getCoverUrl(song)" alt="" class="queue-cover">
+                <div class="queue-info">
+                  <span class="queue-title">{{ song.title }}</span>
+                  <span class="queue-artist">{{ song.artist }}</span>
+                </div>
+                <span class="queue-duration">{{ formatDuration(song.duration) }}</span>
+              </div>
+            }
+          </div>
+        }
       }
     </div>
   }

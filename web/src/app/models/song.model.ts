@@ -12,7 +12,6 @@ export interface Song {
   
   // Datos personalizados (de SQLite)
   description: string; // descripción del usuario
-  rating: number; // 1-10
   ranking: number | null; // ranking interno (con gaps), null = sin rankear
   rankPosition: number | null; // posición visual 1, 2, 3... (calculada)
   playCount: number; // veces reproducida

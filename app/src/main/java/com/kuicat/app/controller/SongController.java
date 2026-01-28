@@ -172,21 +172,6 @@ public class SongController {
     }
     
     /**
-     * Actualiza el rating de una canción.
-     * 
-     * PUT /api/songs/123/rating
-     * Body: { "rating": 8 }
-     */
-    @PutMapping("/{id}/rating")
-    public ResponseEntity<SongDTO> updateRating(
-            @PathVariable Long id,
-            @RequestBody Map<String, Integer> body
-    ) {
-        Integer rating = body.get("rating");
-        return ResponseEntity.ok(songService.updateRating(id, rating));
-    }
-    
-    /**
      * Actualiza las letras de una canción.
      * 
      * PUT /api/songs/123/lyrics

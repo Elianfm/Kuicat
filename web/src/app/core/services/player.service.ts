@@ -80,6 +80,21 @@ export class PlayerService {
     }));
   });
   
+  /**
+   * Canciones anteriores (antes de la actual).
+   * Ordenadas de más reciente a más antigua.
+   * Incluye índice original para referencia.
+   */
+  readonly previousSongs = computed(() => {
+    const queue = this._queue();
+    const index = this._queueIndex();
+    // Desde el inicio hasta antes del actual, invertido
+    return queue.slice(0, index).reverse().map((song, i) => ({
+      ...song,
+      queueIndex: index - 1 - i // Índice real en la cola
+    }));
+  });
+  
   // Formatos de video
   private readonly VIDEO_FORMATS = new Set(['mp4', 'webm', 'mkv']);
   

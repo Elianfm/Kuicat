@@ -53,15 +53,17 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
   showSongSelector = signal(false);
   selectedPlaylistId = signal<number | null>(null);
   
+  // Tab activa en vista de cola
+  queueTab = signal<'upcoming' | 'previous'>('upcoming');
+  
   // Playlists desde el servicio centralizado
   get playlists() {
     return this.playlistService.playlists;
   }
   
-  // Cola de reproducción - ahora viene del PlayerService
-  get upcomingSongs() {
-    return this.playerService.upcomingSongs();
-  }
+  // Cola de reproducción - señales reactivas directas del PlayerService
+  readonly upcomingSongs = this.playerService.upcomingSongs;
+  readonly previousSongs = this.playerService.previousSongs;
   
   // Verifica si la canción actual está en una playlist
   isInPlaylist(playlistId: number): boolean {
@@ -319,5 +321,76 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
     const videoExtensions = new Set(['mp4', 'webm', 'mkv', 'avi', 'mov']);
     const ext = filePath.split('.').pop()?.toLowerCase() || '';
     return videoExtensions.has(ext);
+  }
+  
+  // ========== QUEUE VIEW HELPERS ==========
+  
+  /**
+   * Obtiene el icono del origen de la cola.
+   */
+  getQueueSourceIcon(): string {
+    const playlistId = this.playerService.activePlaylistId();
+    if (playlistId) {
+      const playlist = this.playlists().find(p => p.id === playlistId);
+      return playlist?.icon || 'queue_music';
+    }
+    return 'library_music';
+  }
+  
+  /**
+   * Obtiene el label del origen de la cola.
+   */
+  getQueueSourceLabel(): string {
+    const playlistId = this.playerService.activePlaylistId();
+    if (playlistId) {
+      const playlist = this.playlists().find(p => p.id === playlistId);
+      return playlist?.name || 'Playlist';
+    }
+    return 'Biblioteca';
+  }
+  
+  /**
+   * Obtiene el icono del modo de reproducción.
+   */
+  getPlayModeIcon(): string {
+    const mode = this.playerService.playMode();
+    switch (mode) {
+      case 'shuffle': return 'shuffle';
+      case 'by-ranking':
+      case 'top-50':
+      case 'top-100':
+      case 'top-200':
+      case 'top-300':
+      case 'top-400':
+      case 'top-500':
+        return 'emoji_events';
+      case 'unranked': return 'explore';
+      case 'by-artist': return 'person';
+      case 'by-genre': return 'category';
+      case 'ai-suggested': return 'psychology';
+      default: return 'repeat';
+    }
+  }
+  
+  /**
+   * Obtiene el label del modo de reproducción.
+   */
+  getPlayModeLabel(): string {
+    const mode = this.playerService.playMode();
+    switch (mode) {
+      case 'shuffle': return 'Aleatorio';
+      case 'by-ranking': return 'Ranking';
+      case 'top-50': return 'Top 50';
+      case 'top-100': return 'Top 100';
+      case 'top-200': return 'Top 200';
+      case 'top-300': return 'Top 300';
+      case 'top-400': return 'Top 400';
+      case 'top-500': return 'Top 500';
+      case 'unranked': return 'Descubrir';
+      case 'by-artist': return 'Por Artista';
+      case 'by-genre': return 'Por Género';
+      case 'ai-suggested': return 'IA';
+      default: return 'Secuencial';
+    }
   }
 }

@@ -16,7 +16,6 @@ public class SongUpdateDTO {
     private Integer year;
     private String genre;
     private String description;
-    private Integer rating;
     private String notes;
     private String lyrics;
 }

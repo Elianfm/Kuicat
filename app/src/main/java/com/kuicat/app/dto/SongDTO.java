@@ -24,7 +24,6 @@ public class SongDTO {
     
     // Datos del usuario
     private String description;
-    private Integer rating;
     private Integer ranking;      // Ranking interno (con gaps), null = sin rankear
     private Integer rankPosition; // Posición visual 1, 2, 3... (calculada)
     private Integer playCount;

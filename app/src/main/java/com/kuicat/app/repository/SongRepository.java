@@ -45,11 +45,6 @@ public interface SongRepository extends JpaRepository<Song, Long>, JpaSpecificat
     List<Song> findByGenreIgnoreCase(String genre);
     
     /**
-     * Busca canciones con rating mayor o igual al especificado.
-     */
-    List<Song> findByRatingGreaterThanEqual(Integer rating);
-    
-    /**
      * Obtiene todos los artistas únicos.
      */
     @Query("SELECT DISTINCT s.artist FROM Song s WHERE s.artist IS NOT NULL ORDER BY s.artist")

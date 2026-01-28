@@ -88,6 +88,30 @@
           }
         </div>
         
+        <!-- Descripción (editable con textarea) -->
+        <div class="info-item description-item" [class.editing]="editingField() === 'description'">
+          <span class="info-label">Descripción:</span>
+          @if (editingField() === 'description') {
+            <textarea 
+              class="info-textarea"
+              [(ngModel)]="editValue"
+              (blur)="saveField('description')"
+              (keydown.escape)="cancelEditing()"
+              placeholder="Añade una descripción..."
+              rows="3"
+            ></textarea>
+          } @else {
+            <div class="notes-display editable" (click)="startEditing('description')">
+              @if (songInfo().description) {
+                <span class="notes-text">{{ songInfo().description }}</span>
+              } @else {
+                <span class="notes-placeholder">Añadir descripción...</span>
+              }
+              <span class="material-icons edit-icon">edit</span>
+            </div>
+          }
+        </div>
+        
         <!-- Álbum -->
         <div class="info-item" [class.editing]="editingField() === 'album'">
           <span class="info-label">Álbum:</span>
@@ -153,24 +177,23 @@
           <span class="info-value">{{ songInfo().duration }}</span>
         </div>
         
-        <!-- Puntuación interactiva 1-10 -->
-        <div class="info-item rating-item">
-          <span class="info-label">Puntuación:</span>
-          <div class="rating-container">
-            @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {
-              <span 
-                class="rating-star"
-                [class.filled]="i <= (hoverRating() || songInfo().rating)"
-                [class.hover]="hoverRating() > 0 && i <= hoverRating()"
-                (mouseenter)="hoverRating.set(i)"
-                (mouseleave)="hoverRating.set(0)"
-                (click)="setRating(i)"
-              >
-                {{ i <= (hoverRating() || songInfo().rating) ? '★' : '☆' }}
-              </span>
-            }
-            <span class="rating-value">{{ songInfo().rating }}/10</span>
-          </div>
+        <!-- Posición en Ranking -->
+        <div class="info-item ranking-item">
+          <span class="info-label">Ranking:</span>
+          @if (rankPosition(); as pos) {
+            <div class="ranking-display">
+              <span class="material-icons trophy-icon">emoji_events</span>
+              <span class="ranking-position">{{ pos }}</span>
+              <span class="ranking-total">/ {{ totalRanked() }}</span>
+            </div>
+          } @else {
+            <div class="ranking-empty">
+              <span class="not-ranked">Sin rankear</span>
+              <button class="add-to-ranking-btn" (click)="addToRanking()" title="Añadir al ranking">
+                <span class="material-icons">add</span>
+              </button>
+            </div>
+          }
         </div>
         
         <!-- Separador -->
@@ -197,32 +220,41 @@
           </span>
         </div>
         
+        <!-- Tiempo total escuchado -->
+        @if (totalListenTime(); as time) {
+          <div class="info-item auto-field">
+            <span class="info-label">Tiempo escuchado:</span>
+            <span class="info-value auto">
+              <span class="material-icons stat-icon">timer</span>
+              {{ time }}
+            </span>
+          </div>
+        }
+        
+        <!-- Posición por reproducciones -->
+        @if (playCountPosition(); as pos) {
+          <div class="info-item auto-field">
+            <span class="info-label">Posición por reproducciones:</span>
+            <span class="info-value auto">
+              <span class="material-icons stat-icon">leaderboard</span>
+              #{{ pos.position }} de {{ pos.total }}
+            </span>
+          </div>
+        }
+        
+        <!-- Frecuencia de escucha -->
+        @if (listenFrequency(); as freq) {
+          <div class="info-item auto-field">
+            <span class="info-label">Frecuencia:</span>
+            <span class="info-value auto">
+              <span class="material-icons stat-icon">trending_up</span>
+              {{ freq.text }}
+            </span>
+          </div>
+        }
+        
         <!-- Separador -->
         <div class="info-divider"></div>
-        
-        <!-- Descripción (editable con textarea) -->
-        <div class="info-item description-item" [class.editing]="editingField() === 'description'">
-          <span class="info-label">Descripción:</span>
-          @if (editingField() === 'description') {
-            <textarea 
-              class="info-textarea"
-              [(ngModel)]="editValue"
-              (blur)="saveField('description')"
-              (keydown.escape)="cancelEditing()"
-              placeholder="Añade una descripción..."
-              rows="3"
-            ></textarea>
-          } @else {
-            <div class="notes-display editable" (click)="startEditing('description')">
-              @if (songInfo().description) {
-                <span class="notes-text">{{ songInfo().description }}</span>
-              } @else {
-                <span class="notes-placeholder">Añadir descripción...</span>
-              }
-              <span class="material-icons edit-icon">edit</span>
-            </div>
-          }
-        </div>
         
         <!-- Notas (editable con textarea) -->
         <div class="info-item notes-item" [class.editing]="editingField() === 'notes'">
