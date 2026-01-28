@@ -78,8 +78,20 @@ Tabla: playlist_songs
 - [x] Dropdown se cierra al hacer clic fuera
 - [x] Indicador visual en dropdown del card (igual que sidebar)
 
-### Frontend - Sistema de Notificaciones
-- [x] Componente Toast para notificaciones
+### Frontend - Gestión Avanzada de Playlists
+- [x] Conexión real con backend (PlaylistService completo)
+- [x] Modal de configuración de playlist (Nombre + Selector de Iconos)
+- [x] Creación y eliminación de playlists
+- [x] Modal selector de canciones con sistema de pestañas:
+  - [x] Vista "En esta playlist": Reordenamiento visual (Drag & Drop)
+  - [x] Vista "Agregar canciones": Búsqueda y adición desde biblioteca
+- [x] Reproducción contextual (solo se resalta la playlist fuente activa)
+- [x] Reproducción de "Todas las canciones" (Biblioteca virtual)
+
+### Backend - Optimización
+- [x] Configuración de HikariCP para concurrencia en SQLite (Pool size 10)
+
+## 🚧 En Progreso / Pendiente
 - [x] ToastService global (inyectable)
 - [x] Notificaciones tipo success, info, error
 - [x] Animación de entrada suave con bounce
@@ -206,12 +218,21 @@ Tabla: playlist_songs
 - [ ] Guardar y cargar playlists
 
 ### 4. Modos de Reproducción
-- [ ] **Modo Aleatorio**: reproducción shuffle
-- [ ] **Modo En Orden**: reproducción secuencial
+- [x] **Modo Secuencial**: reproducción en orden original
+- [x] **Modo Aleatorio**: shuffle visual (Fisher-Yates reordena la cola)
+- [x] **Filtros de Ranking**:
+  - [x] Solo rankeadas (todas las que tienen ranking)
+  - [x] Top 50, Top 100, Top 200, Top 300, Top 400, Top 500
+  - [x] Solo no rankeadas (modo descubrir)
+- [x] **Ordenar por**: Artista A-Z, Género A-Z
+- [x] **Toggle Invertir orden**: Funciona con cualquier modo
 - [ ] **Modo IA Sugerido**: 
   - Llamada a LLM cada X canciones
   - Contexto: últimas canciones, puntuaciones, etiquetas
   - Sugerencia inteligente de siguiente canción
+
+### Optimizaciones
+- [x] Thumbnail queue system: Máximo 2 generaciones concurrentes para evitar saturar el navegador
 
 ### 5. Controles de Reproducción
 - [x] Reproducción real de audio/video (HTML5)
@@ -243,9 +264,10 @@ Tabla: playlist_songs
 - [ ] Búsqueda y filtrado avanzado
 
 ### Fase 3: Playlists y Modos
-- [ ] Creación de playlists
-- [ ] Modos de reproducción (aleatorio, en orden)
-- [ ] Interfaz de gestión de playlists
+- [x] Creación de playlists
+- [x] Modos de reproducción (aleatorio, en orden, ranking, por artista/género)
+- [x] Interfaz de gestión de playlists
+- [x] Filtros Top X para ranking
 
 ### Fase 4: IA y Sugerencias
 - [ ] Integración Spring AI

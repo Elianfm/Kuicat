@@ -1,0 +1,126 @@
+<app-modal 
+  [isOpen]="isOpen()" 
+  [title]="modalTitle()" 
+  (closeModal)="onClose()"
+>
+  <div class="song-selector-container">
+    @if (loading()) {
+      <div class="loading-overlay">
+        <span class="material-icons spinning">sync</span>
+        <span>Cargando...</span>
+      </div>
+    }
+    
+    <div class="two-panel-layout">
+      <!-- Selector de vista -->
+      <div class="view-switcher">
+        <button 
+          [class.active]="activeView() === 'playlist'"
+          (click)="activeView.set('playlist')"
+        >
+          En esta playlist ({{ playlistSongs().length }})
+        </button>
+        <button 
+          [class.active]="activeView() === 'library'"
+          (click)="activeView.set('library')"
+        >
+          Agregar canciones
+        </button>
+      </div>
+
+      <!-- PANEL IZQUIERDO: Canciones de la playlist (drag & drop) -->
+      <div class="panel playlist-panel" [class.active]="activeView() === 'playlist'">
+        <div class="panel-header">
+          <span class="material-icons">playlist_play</span>
+          <span>Orden de reproducción</span>
+          @if (reordering()) {
+            <span class="material-icons saving spinning">sync</span>
+          }
+        </div>
+        
+        <div class="panel-content" cdkDropList (cdkDropListDropped)="onPlaylistDrop($event)">
+          @if (playlistSongs().length === 0) {
+            <div class="empty-panel">
+              <span class="material-icons">playlist_add</span>
+              <span>Playlist vacía</span>
+              <button class="btn-link" (click)="activeView.set('library')">
+                Agregar canciones
+              </button>
+            </div>
+          } @else {
+            @for (song of playlistSongs(); track song.id; let i = $index) {
+              <div class="song-item draggable" cdkDrag>
+                <div class="song-item-custom-placeholder" *cdkDragPlaceholder></div>
+                <span class="material-icons drag-handle" cdkDragHandle>drag_indicator</span>
+                <span class="song-number">{{ i + 1 }}</span>
+                <img class="song-cover" [src]="getCoverUrl(song)" alt="" />
+                <div class="song-info">
+                  <span class="song-title">{{ song.title || 'Sin título' }}</span>
+                  <span class="song-artist">{{ song.artist || 'Desconocido' }}</span>
+                </div>
+                <button 
+                  class="remove-btn"
+                  (click)="onRemoveFromPlaylist(song)"
+                  title="Quitar de playlist"
+                >
+                  <span class="material-icons">close</span>
+                </button>
+              </div>
+            }
+          }
+        </div>
+      </div>
+      
+      <!-- PANEL DERECHO: Biblioteca (agregar canciones) -->
+      <div class="panel library-panel" [class.active]="activeView() === 'library'">
+        <div class="panel-header">
+          <span class="material-icons">library_music</span>
+          <span>Biblioteca</span>
+          <span class="count">({{ filteredLibrarySongs().length }})</span>
+        </div>
+        
+        <!-- Barra de búsqueda -->
+        <div class="search-bar">
+          <span class="material-icons">search</span>
+          <input 
+            type="text" 
+            class="search-input"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            placeholder="Buscar canción..."
+          />
+          @if (searchQuery()) {
+            <button class="clear-btn" (click)="searchQuery.set('')">
+              <span class="material-icons">close</span>
+            </button>
+          }
+        </div>
+        
+        <div class="panel-content">
+          @if (filteredLibrarySongs().length === 0) {
+            <div class="empty-panel">
+              <span class="material-icons">search_off</span>
+              <span>No hay canciones disponibles</span>
+            </div>
+          } @else {
+            @for (song of filteredLibrarySongs(); track song.id) {
+              <button 
+                type="button"
+                class="song-item clickable" 
+                (click)="onAddToPlaylist(song)"
+              >
+                <img class="song-cover" [src]="getCoverUrl(song)" alt="" />
+                <div class="song-info">
+                  <span class="song-title">{{ song.title || 'Sin título' }}</span>
+                  <span class="song-artist">{{ song.artist || 'Desconocido' }}</span>
+                </div>
+                <span class="song-duration">{{ formatDuration(song.duration) }}</span>
+                <span class="material-icons add-icon">add_circle_outline</span>
+              </button>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</app-modal>

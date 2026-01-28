@@ -1,6 +1,7 @@
-import { Component, output, HostListener, inject } from '@angular/core';
+import { Component, output, HostListener, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PlayerService } from '../../core/services/player.service';
+import { PlayMode } from '../../models/player-state.model';
 
 @Component({
   selector: 'app-player-bar',
@@ -21,6 +22,11 @@ export class PlayerBarComponent {
   duration = this.playerService.duration;
   volume = this.playerService.volume;
   isLoading = this.playerService.isLoading;
+  playMode = this.playerService.playMode;
+  isReversed = this.playerService.isReversed;
+  
+  // Estado del menú de modo de reproducción
+  showPlayModeMenu = signal(false);
   
   // Estado de drag del volumen
   private isDraggingVolume = false;
@@ -76,6 +82,16 @@ export class PlayerBarComponent {
     this.volumeTrackElement = null;
   }
   
+  /** Click global para cerrar menús */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    // Cerrar menú de modo si se hace clic fuera
+    const target = event.target as HTMLElement;
+    if (!target.closest('.play-mode-control')) {
+      this.showPlayModeMenu.set(false);
+    }
+  }
+  
   private updateVolumeFromMouseEvent(event: MouseEvent): void {
     if (!this.volumeTrackElement) return;
     const rect = this.volumeTrackElement.getBoundingClientRect();
@@ -86,5 +102,61 @@ export class PlayerBarComponent {
   
   onOpenSettings(): void {
     this.openSettings.emit();
+  }
+  
+  // ========== Play Mode Methods ==========
+  
+  togglePlayModeMenu(event: Event): void {
+    event.stopPropagation();
+    this.showPlayModeMenu.update(v => !v);
+  }
+  
+  selectPlayMode(mode: PlayMode): void {
+    this.playerService.setPlayMode(mode);
+    this.showPlayModeMenu.set(false);
+  }
+  
+  toggleReverse(event: Event): void {
+    event.stopPropagation();
+    this.playerService.toggleReverse();
+  }
+  
+  getPlayModeIcon(): string {
+    const mode = this.playMode();
+    switch (mode) {
+      case 'shuffle': return 'shuffle';
+      case 'by-ranking': 
+      case 'top-50':
+      case 'top-100':
+      case 'top-200':
+      case 'top-300':
+      case 'top-400':
+      case 'top-500':
+        return 'emoji_events';
+      case 'unranked': return 'explore';
+      case 'by-artist': return 'person';
+      case 'by-genre': return 'category';
+      case 'ai-suggested': return 'psychology';
+      default: return 'repeat';
+    }
+  }
+  
+  getPlayModeLabel(): string {
+    const mode = this.playMode();
+    switch (mode) {
+      case 'shuffle': return 'Aleatorio';
+      case 'by-ranking': return 'Solo Ranking';
+      case 'top-50': return 'Top 50';
+      case 'top-100': return 'Top 100';
+      case 'top-200': return 'Top 200';
+      case 'top-300': return 'Top 300';
+      case 'top-400': return 'Top 400';
+      case 'top-500': return 'Top 500';
+      case 'unranked': return 'No rankeadas';
+      case 'by-artist': return 'Por Artista';
+      case 'by-genre': return 'Por Género';
+      case 'ai-suggested': return 'IA Sugerido';
+      default: return 'En orden';
+    }
   }
 }

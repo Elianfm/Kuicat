@@ -1,17 +1,13 @@
-import { Component, input, signal, output, inject, HostListener, ElementRef } from '@angular/core';
+import { Component, input, signal, output, inject, HostListener, ElementRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../toast/toast.component';
 import { ConfirmDialogService } from '../confirm-dialog/confirm-dialog.component';
 import { RankingService } from '../../../core/services/ranking.service';
 import { PlayerService } from '../../../core/services/player.service';
+import { ThumbnailService } from '../../../core/services/thumbnail.service';
+import { PlaylistService } from '../../../core/services/playlist.service';
 import { Song } from '../../../models/song.model';
-
-interface Playlist {
-  id: number;
-  name: string;
-  icon: string;
-  hasSong: boolean;
-}
+import { Playlist } from '../../../models/playlist.model';
 
 /** Información mínima de canción vecina en ranking */
 export interface RankingNeighbor {
@@ -35,6 +31,12 @@ export class NowPlayingCardComponent {
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly rankingService = inject(RankingService);
   private readonly playerService = inject(PlayerService);
+  private readonly thumbnailService = inject(ThumbnailService);
+  private readonly playlistService = inject(PlaylistService);
+  
+  // Señal para forzar re-render cuando se generan thumbnails
+  private readonly thumbnailVersion = signal(0);
+  private readonly thumbnailCache = new Map<number, string>();
   
   // Song data
   songId = input<number | null>(null);
@@ -64,6 +66,42 @@ export class NowPlayingCardComponent {
     return pos ? this.rankingService.getNextSong(pos) : null;
   }
   
+  // Covers de vecinos con thumbnail support
+  get prevNeighborCover(): string {
+    return this.prevNeighbor ? this.getCoverUrl(this.prevNeighbor) : 'img/default-cover.webp';
+  }
+  
+  get nextNeighborCover(): string {
+    return this.nextNeighbor ? this.getCoverUrl(this.nextNeighbor) : 'img/default-cover.webp';
+  }
+  
+  /**
+   * Obtiene la URL del cover para una canción con soporte de thumbnails.
+   */
+  getCoverUrl(song: Song): string {
+    this.thumbnailVersion(); // Para reactividad
+    
+    const cached = this.thumbnailCache.get(song.id);
+    if (cached) return cached;
+    
+    if (this.isVideoFile(song.filePath)) {
+      this.thumbnailService.getThumbnail(song.id, song.filePath).then(thumbnail => {
+        if (thumbnail) {
+          this.thumbnailCache.set(song.id, thumbnail);
+          this.thumbnailVersion.update(v => v + 1);
+        }
+      });
+    }
+    
+    return 'img/default-cover.webp';
+  }
+  
+  private isVideoFile(filePath: string): boolean {
+    const videoExtensions = new Set(['mp4', 'webm', 'mkv', 'avi', 'mov']);
+    const ext = filePath.split('.').pop()?.toLowerCase() || '';
+    return videoExtensions.has(ext);
+  }
+  
   // Estado del dropdown
   showPlaylistDropdown = signal(false);
   
@@ -76,14 +114,18 @@ export class NowPlayingCardComponent {
   // Evento cuando el ranking cambia (para refresh)
   rankingChanged = output<void>();
   
-  // Mock playlists con estado de si la canción está en ellas
-  playlists = signal<Playlist[]>([
-    { id: 1, name: 'Favoritas', icon: 'favorite', hasSong: true },
-    { id: 2, name: 'Para trabajar', icon: 'work', hasSong: false },
-    { id: 3, name: 'Chill', icon: 'spa', hasSong: true },
-    { id: 4, name: 'Workout', icon: 'fitness_center', hasSong: false },
-    { id: 5, name: 'Road Trip', icon: 'directions_car', hasSong: true },
-  ]);
+  // Playlists desde el servicio centralizado
+  readonly playlists = this.playlistService.playlists;
+  
+  // Computed: playlists con info de si contienen la canción actual
+  readonly playlistsWithStatus = computed(() => {
+    const id = this.songId();
+    if (!id) return [];
+    return this.playlists().map(p => ({
+      ...p,
+      hasSong: p.songIds.includes(id)
+    }));
+  });
   
   constructor() {
     // Cargar el ranking al iniciar para tener los datos centralizados
@@ -102,19 +144,26 @@ export class NowPlayingCardComponent {
     }
   }
   
-  onTogglePlaylist(playlist: Playlist): void {
+  onTogglePlaylist(playlist: Playlist & { hasSong: boolean }): void {
+    const songId = this.songId();
+    if (!songId) return;
+    
     if (playlist.hasSong) {
-      this.playlists.update(playlists =>
-        playlists.map(p => p.id === playlist.id ? { ...p, hasSong: false } : p)
-      );
-      this.toastService.info(`Quitada de "${playlist.name}"`);
-      this.removeFromPlaylist.emit(playlist.id);
+      this.playlistService.removeSong(playlist.id, songId).subscribe({
+        next: () => {
+          this.toastService.info(`Quitada de "${playlist.name}"`);
+          this.removeFromPlaylist.emit(playlist.id);
+        },
+        error: () => this.toastService.error('Error al quitar de playlist')
+      });
     } else {
-      this.playlists.update(playlists =>
-        playlists.map(p => p.id === playlist.id ? { ...p, hasSong: true } : p)
-      );
-      this.toastService.success(`Agregada a "${playlist.name}"`);
-      this.addToPlaylist.emit(playlist.id);
+      this.playlistService.addSong(playlist.id, songId).subscribe({
+        next: () => {
+          this.toastService.success(`Agregada a "${playlist.name}"`);
+          this.addToPlaylist.emit(playlist.id);
+        },
+        error: () => this.toastService.error('Error al agregar a playlist')
+      });
     }
   }
   

@@ -316,6 +316,15 @@
   border-bottom: 1px solid $border-color;
 }
 
+.dropdown-empty {
+  display: block;
+  padding: $spacing-md;
+  text-align: center;
+  color: $text-muted;
+  font-size: $font-size-sm;
+  font-style: italic;
+}
+
 .dropdown-item {
   display: flex;
   align-items: center;

@@ -26,6 +26,157 @@
     <span class="time">{{ formattedDuration() }}</span>
   </div>
   
+  <!-- Play Mode -->
+  <div class="play-mode-control">
+    <button 
+      class="mode-btn" 
+      [class.active]="playMode() !== 'sequential'"
+      [title]="getPlayModeLabel()"
+      (click)="togglePlayModeMenu($event)"
+    >
+      <span class="material-icons">{{ getPlayModeIcon() }}</span>
+    </button>
+    
+    @if (showPlayModeMenu()) {
+      <div class="play-mode-menu">
+        <div class="menu-section-title">Orden de reproducción</div>
+        
+        <button 
+          class="menu-item" 
+          [class.selected]="playMode() === 'sequential'"
+          (click)="selectPlayMode('sequential')"
+        >
+          <span class="material-icons">repeat</span>
+          <span class="label">En orden</span>
+        </button>
+        
+        <button 
+          class="menu-item" 
+          [class.selected]="playMode() === 'shuffle'"
+          (click)="selectPlayMode('shuffle')"
+        >
+          <span class="material-icons">shuffle</span>
+          <span class="label">Aleatorio</span>
+        </button>
+        
+        <div class="menu-divider"></div>
+        <div class="menu-section-title">Filtrar por ranking</div>
+        
+        <button 
+          class="menu-item" 
+          [class.selected]="playMode() === 'by-ranking'"
+          (click)="selectPlayMode('by-ranking')"
+        >
+          <span class="material-icons">emoji_events</span>
+          <span class="label">Solo rankeadas</span>
+        </button>
+        
+        <div class="menu-top-items">
+          <button 
+            class="menu-item top-btn" 
+            [class.selected]="playMode() === 'top-50'"
+            (click)="selectPlayMode('top-50')"
+          >
+            <span class="label">Top 50</span>
+          </button>
+          <button 
+            class="menu-item top-btn" 
+            [class.selected]="playMode() === 'top-100'"
+            (click)="selectPlayMode('top-100')"
+          >
+            <span class="label">Top 100</span>
+          </button>
+          <button 
+            class="menu-item top-btn" 
+            [class.selected]="playMode() === 'top-200'"
+            (click)="selectPlayMode('top-200')"
+          >
+            <span class="label">Top 200</span>
+          </button>
+          <button 
+            class="menu-item top-btn" 
+            [class.selected]="playMode() === 'top-300'"
+            (click)="selectPlayMode('top-300')"
+          >
+            <span class="label">Top 300</span>
+          </button>
+          <button 
+            class="menu-item top-btn" 
+            [class.selected]="playMode() === 'top-400'"
+            (click)="selectPlayMode('top-400')"
+          >
+            <span class="label">Top 400</span>
+          </button>
+          <button 
+            class="menu-item top-btn" 
+            [class.selected]="playMode() === 'top-500'"
+            (click)="selectPlayMode('top-500')"
+          >
+            <span class="label">Top 500</span>
+          </button>
+        </div>
+        
+        <button 
+          class="menu-item" 
+          [class.selected]="playMode() === 'unranked'"
+          (click)="selectPlayMode('unranked')"
+        >
+          <span class="material-icons">explore</span>
+          <span class="label">Sin rankear (descubrir)</span>
+        </button>
+        
+        <div class="menu-divider"></div>
+        <div class="menu-section-title">Ordenar por</div>
+        
+        <button 
+          class="menu-item" 
+          [class.selected]="playMode() === 'by-artist'"
+          (click)="selectPlayMode('by-artist')"
+        >
+          <span class="material-icons">person</span>
+          <span class="label">Por Artista A-Z</span>
+        </button>
+        
+        <button 
+          class="menu-item" 
+          [class.selected]="playMode() === 'by-genre'"
+          (click)="selectPlayMode('by-genre')"
+        >
+          <span class="material-icons">category</span>
+          <span class="label">Por Género A-Z</span>
+        </button>
+        
+        <div class="menu-divider"></div>
+        
+        <button 
+          class="menu-item disabled" 
+          [class.selected]="playMode() === 'ai-suggested'"
+          disabled
+          title="Próximamente"
+        >
+          <span class="material-icons">psychology</span>
+          <span class="label">IA Sugerido</span>
+          <span class="badge">Próx.</span>
+        </button>
+        
+        <div class="menu-divider"></div>
+        <div class="menu-section-title">Opciones</div>
+        
+        <button 
+          class="menu-item" 
+          [class.active]="isReversed()"
+          (click)="toggleReverse($event)"
+        >
+          <span class="material-icons">swap_vert</span>
+          <span class="label">Invertir orden</span>
+          @if (isReversed()) {
+            <span class="material-icons check">check</span>
+          }
+        </button>
+      </div>
+    }
+  </div>
+  
   <!-- Volumen -->
   <div class="volume-control">
     <button class="volume-btn">

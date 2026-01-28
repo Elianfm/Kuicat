@@ -10,11 +10,12 @@
     [class.visible]="isVideo() && currentSong()"
     [class.audio-only]="!isVideo()"
     playsinline
+    (click)="togglePlay()"
   ></video>
   
   <!-- Cover display - solo cuando es audio o no hay canción -->
   @if (!isVideo() || !currentSong()) {
-    <div class="cover-display">
+    <div class="cover-display" (click)="togglePlay()">
       <img [src]="coverUrl()" [alt]="songTitle()" class="cover-image">
     </div>
   }

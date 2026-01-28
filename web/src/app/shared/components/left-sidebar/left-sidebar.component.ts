@@ -182,7 +182,7 @@ export class LeftSidebarComponent {
     const newValue = field === 'year' ? Number(this.editValue) : this.editValue.trim();
     
     if (newValue !== this.songInfo()[field]) {
-      // Actualizar localmente
+      // Actualizar localmente en el sidebar
       this.songInfo.update(info => ({
         ...info,
         [field]: newValue
@@ -193,6 +193,8 @@ export class LeftSidebarComponent {
         .subscribe({
           next: () => {
             this.toastService.success(`${this.getFieldLabel(field)} actualizado`);
+            // Actualizar también en el PlayerService para que persista en la cola
+            this.playerService.updateCurrentSong({ [field]: newValue } as Partial<Song>);
             this.songInfoChange.emit({ [field]: newValue } as Partial<SongInfo>);
           },
           error: (err) => {
@@ -230,6 +232,8 @@ export class LeftSidebarComponent {
       .subscribe({
         next: () => {
           this.toastService.success(`Puntuación: ${rating}/10`);
+          // Actualizar también en el PlayerService
+          this.playerService.updateCurrentSong({ rating });
           this.songInfoChange.emit({ rating });
         },
         error: (err) => {
@@ -284,6 +288,8 @@ export class LeftSidebarComponent {
         .subscribe({
           next: () => {
             this.toastService.success('Letra guardada');
+            // Actualizar también en el PlayerService
+            this.playerService.updateCurrentSong({ lyrics: newLyrics });
             this.lyricsChange.emit(newLyrics);
           },
           error: (err) => {

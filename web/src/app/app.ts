@@ -11,6 +11,7 @@ import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConfigModalComponent, AppConfig } from './shared/components/config-modal/config-modal.component';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
 import { PlayerService } from './core/services/player.service';
+import { ThumbnailService } from './core/services/thumbnail.service';
 import { Song } from './models/song.model';
 
 interface PageResponse<T> {
@@ -42,6 +43,7 @@ interface PageResponse<T> {
 export class App implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly playerService = inject(PlayerService);
+  private readonly thumbnailService = inject(ThumbnailService);
   
   // Estado de sidebars (controlado desde main-view)
   leftSidebar = signal<'lyrics' | 'info' | null>(null);
@@ -51,6 +53,10 @@ export class App implements OnInit {
   currentSong = this.playerService.currentSong;
   nextSong = this.playerService.nextSong;
   isVideo = this.playerService.isVideo;
+  
+  // Thumbnails cacheados para las cards
+  private readonly thumbnailVersion = signal(0);
+  private readonly thumbnailCache = new Map<number, string>();
   
   // Estado del modal de configuración
   configModalOpen = signal(false);
@@ -105,5 +111,43 @@ export class App implements OnInit {
     localStorage.setItem('kuicat-config', JSON.stringify(config));
     // Recargar biblioteca después de cambiar configuración
     this.loadLibrary();
+  }
+  
+  /**
+   * Obtiene la URL del cover para una canción.
+   * Para videos, genera thumbnail al vuelo y lo cachea.
+   */
+  getCoverUrl(song: Song | null): string {
+    if (!song) return 'img/default-cover.webp';
+    
+    // Dependencia de la señal para reactividad
+    this.thumbnailVersion();
+    
+    // Verificar si ya tenemos thumbnail cacheado
+    const cached = this.thumbnailCache.get(song.id);
+    if (cached) {
+      return cached;
+    }
+    
+    // Si es video, generar thumbnail asíncronamente
+    if (this.isVideoFile(song.filePath)) {
+      this.thumbnailService.getThumbnail(song.id, song.filePath).then(thumbnail => {
+        if (thumbnail) {
+          this.thumbnailCache.set(song.id, thumbnail);
+          this.thumbnailVersion.update(v => v + 1);
+        }
+      });
+    }
+    
+    return 'img/default-cover.webp';
+  }
+  
+  /**
+   * Determina si un archivo es video.
+   */
+  private isVideoFile(filePath: string): boolean {
+    const videoExtensions = new Set(['mp4', 'webm', 'mkv', 'avi', 'mov']);
+    const ext = filePath.split('.').pop()?.toLowerCase() || '';
+    return videoExtensions.has(ext);
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Song } from '../../models/song.model';
+import { PlayMode } from '../../models/player-state.model';
 
 /**
  * Servicio central de reproducción multimedia.
@@ -26,6 +27,13 @@ export class PlayerService {
   private readonly _queue = signal<Song[]>([]);
   private readonly _queueIndex = signal(0);
   private readonly _isLoading = signal(false);
+  private readonly _activePlaylistId = signal<number | null>(null);
+  private readonly _playMode = signal<PlayMode>('sequential');
+  private readonly _isReversed = signal(false);
+  
+  // Cola original (para restaurar al desactivar shuffle)
+  private originalQueue: Song[] = [];
+  private originalIndex = 0;
   
   // Señales públicas (solo lectura)
   readonly currentSong = this._currentSong.asReadonly();
@@ -37,6 +45,9 @@ export class PlayerService {
   readonly queue = this._queue.asReadonly();
   readonly queueIndex = this._queueIndex.asReadonly();
   readonly isLoading = this._isLoading.asReadonly();
+  readonly activePlaylistId = this._activePlaylistId.asReadonly();
+  readonly playMode = this._playMode.asReadonly();
+  readonly isReversed = this._isReversed.asReadonly();
   
   // Computados
   readonly progressPercent = computed(() => {
@@ -54,6 +65,19 @@ export class PlayerService {
     const queue = this._queue();
     const index = this._queueIndex();
     return index < queue.length - 1 ? queue[index + 1] : null;
+  });
+  
+  /**
+   * Canciones pendientes (después de la actual).
+   * Incluye índice original para referencia.
+   */
+  readonly upcomingSongs = computed(() => {
+    const queue = this._queue();
+    const index = this._queueIndex();
+    return queue.slice(index + 1).map((song, i) => ({
+      ...song,
+      queueIndex: index + 1 + i // Índice real en la cola
+    }));
   });
   
   // Formatos de video
@@ -140,13 +164,45 @@ export class PlayerService {
   /**
    * Carga una lista de canciones como queue.
    * @param autoPlay Si es true, reproduce la primera canción. Por defecto false para evitar errores de autoplay del navegador.
+   * @param playlistId ID de la playlist origen (para el contexto de UI).
    */
-  async loadQueue(songs: Song[], startIndex = 0, autoPlay = false): Promise<void> {
-    this._queue.set(songs);
-    this._queueIndex.set(startIndex);
+  async loadQueue(songs: Song[], startIndex = 0, autoPlay = false, playlistId: number | null = null): Promise<void> {
+    const currentMode = this._playMode();
+    const requiresSort = this.isModeThatRequiresSort(currentMode);
     
-    if (songs.length > 0 && startIndex < songs.length) {
-      const song = songs[startIndex];
+    // Resetear inversión al cargar nueva cola
+    this._isReversed.set(false);
+    
+    // Si estamos en un modo que requiere ordenar
+    if (requiresSort && songs.length > 1) {
+      // Guardar cola original
+      this.originalQueue = [...songs];
+      this.originalIndex = startIndex;
+      
+      // La canción inicial va al principio
+      const startSong = songs[startIndex];
+      let rest = songs.filter((_, i) => i !== startIndex);
+      
+      // Aplicar filtrado según el modo
+      rest = this.filterByMode(rest, currentMode);
+      
+      // Aplicar ordenamiento según el modo
+      this.sortRestByMode(rest, currentMode);
+      
+      this._queue.set([startSong, ...rest]);
+      this._queueIndex.set(0);
+    } else {
+      this._queue.set(songs);
+      this._queueIndex.set(startIndex);
+    }
+    
+    this._activePlaylistId.set(playlistId);
+    
+    const queue = this._queue();
+    const index = this._queueIndex();
+    
+    if (queue.length > 0 && index < queue.length) {
+      const song = queue[index];
       
       // Establecer la canción actual para mostrar info
       this._currentSong.set(song);
@@ -163,11 +219,91 @@ export class PlayerService {
         this.mediaElement.load();
       }
       
-      // Solo reproducir si autoPlay está activado (requiere interacción del usuario previa)
+      // Solo reproducir si autoPlay está activado
       if (autoPlay) {
         await this.playSong(song);
       }
     }
+  }
+  
+  /**
+   * Ordena un array de canciones según el modo actual.
+   * Modifica el array in-place.
+   */
+  private sortRestByMode(songs: Song[], mode: PlayMode): void {
+    switch (mode) {
+      case 'shuffle':
+        // Fisher-Yates shuffle
+        for (let i = songs.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [songs[i], songs[j]] = [songs[j], songs[i]];
+        }
+        break;
+        
+      case 'by-ranking':
+      case 'top-50':
+      case 'top-100':
+      case 'top-200':
+      case 'top-300':
+      case 'top-400':
+      case 'top-500':
+        songs.sort((a, b) => (a.rankPosition ?? 0) - (b.rankPosition ?? 0));
+        break;
+        
+      case 'unranked':
+        // No requiere ordenamiento especial
+        break;
+        
+      case 'by-artist':
+        songs.sort((a, b) => (a.artist ?? '').toLowerCase().localeCompare((b.artist ?? '').toLowerCase()));
+        break;
+        
+      case 'by-genre':
+        songs.sort((a, b) => (a.genre ?? '').toLowerCase().localeCompare((b.genre ?? '').toLowerCase()));
+        break;
+    }
+  }
+  
+  /**
+   * Filtra canciones según el modo actual.
+   * Retorna un nuevo array con las canciones filtradas.
+   */
+  private filterByMode(songs: Song[], mode: PlayMode): Song[] {
+    switch (mode) {
+      case 'by-ranking':
+        return songs.filter(s => s.rankPosition != null);
+        
+      case 'top-50':
+        return songs.filter(s => s.rankPosition != null && s.rankPosition <= 50);
+        
+      case 'top-100':
+        return songs.filter(s => s.rankPosition != null && s.rankPosition <= 100);
+        
+      case 'top-200':
+        return songs.filter(s => s.rankPosition != null && s.rankPosition <= 200);
+        
+      case 'top-300':
+        return songs.filter(s => s.rankPosition != null && s.rankPosition <= 300);
+        
+      case 'top-400':
+        return songs.filter(s => s.rankPosition != null && s.rankPosition <= 400);
+        
+      case 'top-500':
+        return songs.filter(s => s.rankPosition != null && s.rankPosition <= 500);
+        
+      case 'unranked':
+        return songs.filter(s => s.rankPosition == null);
+        
+      default:
+        return songs;
+    }
+  }
+  
+  /**
+   * Determina si un modo requiere modificar la cola.
+   */
+  private isModeThatRequiresSort(mode: PlayMode): boolean {
+    return ['shuffle', 'by-ranking', 'top-50', 'top-100', 'top-200', 'top-300', 'top-400', 'top-500', 'unranked', 'by-artist', 'by-genre'].includes(mode);
   }
   
   /**
@@ -277,6 +413,63 @@ export class PlayerService {
   }
   
   /**
+   * Elimina una canción de la cola por índice.
+   * No puede eliminar la canción actual.
+   */
+  removeFromQueue(index: number): void {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    
+    // No permitir eliminar la canción actual
+    if (index === currentIndex || index < 0 || index >= queue.length) {
+      return;
+    }
+    
+    const newQueue = [...queue];
+    newQueue.splice(index, 1);
+    this._queue.set(newQueue);
+    
+    // Ajustar índice si eliminamos antes de la canción actual
+    if (index < currentIndex) {
+      this._queueIndex.set(currentIndex - 1);
+    }
+  }
+  
+  /**
+   * Mueve una canción en la cola de una posición a otra.
+   * Para drag & drop.
+   */
+  moveInQueue(fromIndex: number, toIndex: number): void {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    
+    if (fromIndex < 0 || fromIndex >= queue.length || 
+        toIndex < 0 || toIndex >= queue.length ||
+        fromIndex === toIndex) {
+      return;
+    }
+    
+    const newQueue = [...queue];
+    const [movedItem] = newQueue.splice(fromIndex, 1);
+    newQueue.splice(toIndex, 0, movedItem);
+    this._queue.set(newQueue);
+    
+    // Ajustar índice actual si fue afectado por el movimiento
+    let newCurrentIndex = currentIndex;
+    if (fromIndex === currentIndex) {
+      // Movimos la canción actual
+      newCurrentIndex = toIndex;
+    } else if (fromIndex < currentIndex && toIndex >= currentIndex) {
+      // Movimos algo de antes a después
+      newCurrentIndex = currentIndex - 1;
+    } else if (fromIndex > currentIndex && toIndex <= currentIndex) {
+      // Movimos algo de después a antes
+      newCurrentIndex = currentIndex + 1;
+    }
+    this._queueIndex.set(newCurrentIndex);
+  }
+  
+  /**
    * Actualiza parcialmente la canción actual.
    * Útil cuando cambia el ranking u otras propiedades.
    */
@@ -345,6 +538,250 @@ export class PlayerService {
     if (next?.id) {
       this.refreshSongById(next.id);
     }
+  }
+
+  // ========== PLAY MODE METHODS ==========
+  
+  /**
+   * Cambia el modo de reproducción.
+   * @param mode El nuevo modo de reproducción
+   */
+  setPlayMode(mode: PlayMode): void {
+    const currentMode = this._playMode();
+    
+    // Si no hay cambio, no hacer nada
+    if (mode === currentMode) return;
+    
+    // Resetear inversión al cambiar modo
+    this._isReversed.set(false);
+    
+    // Edge case: Cola vacía
+    if (this._queue().length === 0) {
+      this._playMode.set(mode);
+      return;
+    }
+    
+    // Determinar si el modo actual requiere restaurar orden original
+    const requiresRestore = this.isModeThatRequiresSort(currentMode);
+    const newRequiresSort = this.isModeThatRequiresSort(mode);
+    
+    // Si salimos de un modo ordenado, restaurar orden original
+    if (requiresRestore && !newRequiresSort) {
+      this.restoreOriginalQueue();
+    }
+    
+    // Si entramos a un modo que requiere ordenar
+    if (newRequiresSort) {
+      // Guardar o restaurar orden original según contexto
+      if (requiresRestore) {
+        // Restaurar antes de reordenar
+        this.restoreOriginalQueue();
+      }
+      // Siempre guardar el orden actual como original
+      this.originalQueue = [...this._queue()];
+      this.originalIndex = this._queueIndex();
+      
+      // Aplicar el ordenamiento según el modo
+      this.applySortMode(mode);
+    }
+    
+    this._playMode.set(mode);
+  }
+  
+  /**
+   * Aplica el ordenamiento según el modo seleccionado.
+   */
+  private applySortMode(mode: PlayMode): void {
+    switch (mode) {
+      case 'shuffle':
+        this.shuffleQueue();
+        break;
+      case 'by-ranking':
+        this.sortByRanking();
+        break;
+      case 'top-50':
+        this.sortByRankingTop(50);
+        break;
+      case 'top-100':
+        this.sortByRankingTop(100);
+        break;
+      case 'top-200':
+        this.sortByRankingTop(200);
+        break;
+      case 'top-300':
+        this.sortByRankingTop(300);
+        break;
+      case 'top-400':
+        this.sortByRankingTop(400);
+        break;
+      case 'top-500':
+        this.sortByRankingTop(500);
+        break;
+      case 'unranked':
+        this.filterUnranked();
+        break;
+      case 'by-artist':
+        this.sortByField('artist');
+        break;
+      case 'by-genre':
+        this.sortByField('genre');
+        break;
+    }
+  }
+  
+  /**
+   * Filtra y ordena la cola por ranking.
+   * Solo incluye canciones rankeadas (excluye las no rankeadas).
+   */
+  private sortByRanking(): void {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    const currentSong = queue[currentIndex];
+    
+    // Separar canción actual y filtrar solo rankeadas
+    const rest = queue
+      .filter((s, i) => i !== currentIndex && s.rankPosition != null)
+      .sort((a, b) => (a.rankPosition ?? 0) - (b.rankPosition ?? 0));
+    
+    // Si la canción actual está rankeada, va al inicio; si no, agregarla igual
+    this._queue.set([currentSong, ...rest]);
+    this._queueIndex.set(0);
+  }
+  
+  /**
+   * Filtra y ordena la cola por ranking, limitado a las primeras N posiciones.
+   */
+  private sortByRankingTop(limit: number): void {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    const currentSong = queue[currentIndex];
+    
+    // Separar canción actual y filtrar solo rankeadas dentro del límite
+    const rest = queue
+      .filter((s, i) => i !== currentIndex && s.rankPosition != null && s.rankPosition <= limit)
+      .sort((a, b) => (a.rankPosition ?? 0) - (b.rankPosition ?? 0));
+    
+    this._queue.set([currentSong, ...rest]);
+    this._queueIndex.set(0);
+  }
+  
+  /**
+   * Filtra la cola para mostrar solo canciones NO rankeadas.
+   * Útil para descubrir canciones que aún no has valorado.
+   */
+  private filterUnranked(): void {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    const currentSong = queue[currentIndex];
+    
+    // Separar canción actual y filtrar solo NO rankeadas
+    const rest = queue.filter((s, i) => i !== currentIndex && s.rankPosition == null);
+    
+    // Canción actual siempre va al inicio
+    this._queue.set([currentSong, ...rest]);
+    this._queueIndex.set(0);
+  }
+  
+  /**
+   * Ordena la cola por un campo de texto (artista, género, etc).
+   */
+  private sortByField(field: 'artist' | 'genre'): void {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    const currentSong = queue[currentIndex];
+    
+    // Separar canción actual
+    const rest = queue.filter((_, i) => i !== currentIndex);
+    
+    // Ordenar alfabéticamente por el campo
+    rest.sort((a, b) => {
+      const aVal = (a[field] ?? '').toLowerCase();
+      const bVal = (b[field] ?? '').toLowerCase();
+      return aVal.localeCompare(bVal);
+    });
+    
+    // Canción actual al inicio
+    this._queue.set([currentSong, ...rest]);
+    this._queueIndex.set(0);
+  }
+  
+  /**
+   * Invierte el orden de la cola (excepto la canción actual).
+   * Funciona como un toggle: invertir de nuevo restaura el orden.
+   */
+  toggleReverse(): void {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    
+    // Edge case: Cola con 0, 1 o 2 elementos (invertir no tiene efecto visual)
+    if (queue.length <= 2) return;
+    
+    // Separar canción actual del resto
+    const currentSong = queue[currentIndex];
+    const rest = queue.filter((_, i) => i !== currentIndex);
+    
+    // Invertir el resto
+    rest.reverse();
+    
+    // Actualizar cola
+    this._queue.set([currentSong, ...rest]);
+    this._queueIndex.set(0);
+    
+    // Toggle del estado
+    this._isReversed.update(v => !v);
+  }
+  
+  /**
+   * Mezcla la cola usando Fisher-Yates.
+   * La canción actual se mantiene en posición 0.
+   * Nota: El orden original ya fue guardado por setPlayMode.
+   */
+  private shuffleQueue(): void {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    
+    // Edge case: Cola con 0 o 1 elementos
+    if (queue.length <= 1) return;
+    
+    // Separar canción actual del resto
+    const currentSong = queue[currentIndex];
+    const rest = queue.filter((_, i) => i !== currentIndex);
+    
+    // Fisher-Yates shuffle
+    for (let i = rest.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rest[i], rest[j]] = [rest[j], rest[i]];
+    }
+    
+    // Poner canción actual al inicio
+    this._queue.set([currentSong, ...rest]);
+    this._queueIndex.set(0);
+  }
+  
+  /**
+   * Restaura la cola al orden original (antes del shuffle).
+   * Mantiene la canción actual en reproducción.
+   */
+  private restoreOriginalQueue(): void {
+    // Edge case: No hay cola original guardada
+    if (this.originalQueue.length === 0) return;
+    
+    const currentSong = this._currentSong();
+    
+    // Restaurar cola original
+    this._queue.set([...this.originalQueue]);
+    
+    // Encontrar la canción actual en la cola original
+    if (currentSong) {
+      const newIndex = this.originalQueue.findIndex(s => s.id === currentSong.id);
+      this._queueIndex.set(newIndex >= 0 ? newIndex : this.originalIndex);
+    } else {
+      this._queueIndex.set(this.originalIndex);
+    }
+    
+    // Limpiar guardado
+    this.originalQueue = [];
+    this.originalIndex = 0;
   }
   
   /**

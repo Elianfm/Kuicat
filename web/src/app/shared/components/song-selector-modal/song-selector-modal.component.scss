@@ -1,0 +1,399 @@
+@use '../../../../styles.scss' as *;
+
+.song-selector-container {
+  position: relative;
+  min-width: 400px;
+  max-width: 500px;
+}
+
+// Loading overlay
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  background: rgba($bg-secondary, 0.9);
+  z-index: 10;
+  border-radius: $border-radius;
+  color: $text-muted;
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+    font-size: 32px;
+  }
+}
+
+// Layout de dos paneles
+.two-panel-layout {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-height: 400px;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+// Switcher de vista (solo para móviles/single panel logic si fuera necesario)
+.view-switcher {
+  display: flex;
+  background: $bg-tertiary;
+  border-radius: $border-radius;
+  padding: 4px;
+  gap: 4px;
+  
+  button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    color: $text-muted;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    transition: all $transition-fast;
+    
+    &.active {
+      background: $bg-primary;
+      color: $text-primary;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    &:hover:not(.active) {
+      color: $text-primary;
+    }
+  }
+}
+
+// Estilos de panel compartidos
+.panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  background: $bg-primary;
+  overflow: hidden;
+  height: 100%;
+}
+
+// Ocultar paneles según la vista activa
+.panel:not(.active) {
+  display: none;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-tertiary;
+  border-bottom: 1px solid $border-color;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: $text-primary;
+  flex-shrink: 0;
+  
+  .material-icons {
+    font-size: 20px;
+    color: $accent-primary;
+  }
+  
+  .count {
+    color: $text-muted;
+    font-weight: 400;
+  }
+  
+  .saving {
+    margin-left: auto;
+    font-size: 18px;
+    color: $accent-primary;
+  }
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+// Panel izquierdo (playlist)
+.playlist-panel {
+  .panel-header .material-icons:first-child {
+    color: $accent-secondary;
+  }
+}
+
+// Panel derecho (biblioteca)
+.library-panel {
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs $spacing-md;
+    background: $bg-secondary;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+    
+    .material-icons {
+      color: $text-muted;
+      font-size: 20px;
+    }
+    
+    &:focus-within .material-icons {
+      color: $accent-primary;
+    }
+  }
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: $text-primary;
+  font-family: $font-body;
+  font-size: $font-size-sm;
+  
+  &:focus {
+    outline: none;
+  }
+  
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+.clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: $text-muted;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all $transition-fast;
+  
+  &:hover {
+    background: $bg-tertiary;
+    color: $text-primary;
+  }
+  
+  .material-icons {
+    font-size: 16px;
+  }
+}
+
+// Song item compartido
+.song-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-md;
+  transition: background-color $transition-fast;
+  border: none;
+  border-bottom: 1px solid $border-color;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:hover {
+    background: $bg-tertiary;
+  }
+}
+
+.song-cover {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.song-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.song-title {
+  font-size: $font-size-sm;
+  color: $text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-artist {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-duration {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  flex-shrink: 0;
+}
+
+.song-number {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  min-width: 18px;
+  text-align: center;
+}
+
+// Elementos específicos de playlist (drag & drop)
+.draggable {
+  cursor: grab;
+  
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.drag-handle {
+  color: $text-muted;
+  font-size: 18px;
+  cursor: grab;
+  opacity: 0.5;
+  transition: opacity $transition-fast;
+  
+  &:hover {
+    opacity: 1;
+    color: $accent-primary;
+  }
+}
+
+.remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: $text-muted;
+  cursor: pointer;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all $transition-fast;
+  
+  .song-item:hover & {
+    opacity: 1;
+  }
+  
+  &:hover {
+    background: rgba($error, 0.1);
+    color: $error;
+  }
+  
+  .material-icons {
+    font-size: 18px;
+  }
+}
+
+// Elementos de biblioteca (clickable)
+.clickable {
+  cursor: pointer;
+  
+  .add-icon {
+    color: $text-muted;
+    font-size: 20px;
+    transition: all $transition-fast;
+  }
+  
+  &:hover .add-icon {
+    color: $accent-primary;
+  }
+}
+
+// Empty state
+.empty-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-xl;
+  color: $text-muted;
+  height: 100%;
+  
+  .material-icons {
+    font-size: 48px;
+    opacity: 0.4;
+  }
+  
+  .hint {
+    font-size: $font-size-xs;
+    opacity: 0.7;
+  }
+}
+
+.btn-link {
+  background: transparent;
+  border: none;
+  color: $accent-primary;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: $font-size-sm;
+  padding: $spacing-xs;
+  
+  &:hover {
+    color: lighten($accent-primary, 10%);
+  }
+}
+
+// CDK Drag & Drop styles
+.cdk-drag-preview {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-md;
+  background: $bg-secondary;
+  border: 1px solid $accent-primary;
+  border-radius: $border-radius;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  
+  .song-cover {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.cdk-drag-placeholder {
+  background: rgba($accent-primary, 0.1);
+  border: 1px dashed $accent-primary;
+  border-radius: $border-radius;
+  opacity: 0.5;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drop-list-dragging .song-item:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// Animación de spin
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}

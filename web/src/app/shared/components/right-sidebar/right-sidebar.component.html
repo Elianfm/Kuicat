@@ -33,6 +33,7 @@
                 <span class="material-icons">drag_indicator</span>
               </div>
               <span class="rank-position">{{ i + 1 }}</span>
+              <img [src]="getCoverUrl(song)" alt="" class="ranking-cover">
               <div class="song-info">
                 <span class="song-title">{{ song.title }}</span>
                 <span class="song-artist">{{ song.artist }}</span>
@@ -54,67 +55,147 @@
   
   @if (activeView() === 'playlist') {
     <div class="sidebar-content">
-      <h3>Playlists</h3>
-      <div class="playlist-list">
-        @for (playlist of playlists(); track playlist.id) {
-          <div class="playlist-item" [class.contains-current]="isInPlaylist(playlist.id)">
-            <button 
-              class="play-btn" 
-              (click)="onPlayPlaylist(playlist.id)"
-              title="Reproducir playlist"
-            >
-              <span class="material-icons">play_arrow</span>
-            </button>
-            <span class="material-icons playlist-icon">{{ playlist.icon }}</span>
-            <div class="playlist-info">
-              <span class="playlist-name">{{ playlist.name }}</span>
-              <span class="playlist-count">{{ playlist.songCount }} canciones</span>
-            </div>
-            @if (isInPlaylist(playlist.id)) {
-              <button 
-                class="remove-btn" 
-                (click)="onRemoveFromPlaylist(playlist.id)"
-                title="Quitar canción de esta playlist"
-              >
-                <span class="material-icons">remove</span>
-              </button>
-            } @else {
-              <button 
-                class="add-btn" 
-                (click)="onAddToPlaylist(playlist.id)"
-                title="Agregar canción actual"
-              >
-                <span class="material-icons">add</span>
-              </button>
-            }
+      <h3>Biblioteca</h3>
+      
+      <!-- Opción especial: Todas las canciones -->
+      <div class="playlist-list library-section">
+        <div class="playlist-item library-item" (click)="onPlayLibrary()">
+          <button 
+            class="play-btn always-visible" 
+            title="Reproducir todas"
+          >
+            <span class="material-icons">play_arrow</span>
+          </button>
+          <span class="material-icons playlist-icon">library_music</span>
+          <div class="playlist-info">
+            <span class="playlist-name">Todas las canciones</span>
+            <span class="playlist-count">Biblioteca completa</span>
           </div>
+        </div>
+      </div>
+      
+      <h3 class="section-title">Mis Playlists</h3>
+      <div class="playlist-list">
+        @if (playlistService.loading()) {
+          <div class="loading-state">
+            <span class="material-icons spinning">sync</span>
+            <span>Cargando playlists...</span>
+          </div>
+        } @else if (playlists().length === 0) {
+          <div class="empty-state">
+            <span class="material-icons">queue_music</span>
+            <span>No hay playlists creadas</span>
+          </div>
+        } @else {
+          @for (playlist of playlists(); track playlist.id) {
+            <div class="playlist-item" [class.contains-current]="playerService.activePlaylistId() === playlist.id">
+              <button 
+                class="play-btn" 
+                (click)="onPlayPlaylist(playlist.id)"
+                title="Reproducir playlist"
+              >
+                <span class="material-icons">play_arrow</span>
+              </button>
+              <span class="material-icons playlist-icon">{{ playlist.icon }}</span>
+              <div class="playlist-info">
+                <span class="playlist-name">{{ playlist.name }}</span>
+                <span class="playlist-count">{{ playlist.songCount }} canciones</span>
+              </div>
+              @if (isInPlaylist(playlist.id)) {
+                <button 
+                  class="remove-btn" 
+                  (click)="onRemoveFromPlaylist(playlist.id)"
+                  title="Quitar canción de esta playlist"
+                >
+                  <span class="material-icons">remove</span>
+                </button>
+              } @else {
+                <button 
+                  class="add-btn" 
+                  (click)="onAddToPlaylist(playlist.id)"
+                  title="Agregar canción actual"
+                >
+                  <span class="material-icons">add</span>
+                </button>
+              }
+              <button 
+                class="config-btn" 
+                (click)="onConfigPlaylist(playlist)"
+                title="Configurar playlist"
+              >
+                <span class="material-icons">settings</span>
+              </button>
+            </div>
+          }
         }
       </div>
-      <button class="create-playlist-btn">
+      <button class="create-playlist-btn" (click)="onCreatePlaylist()">
         <span class="material-icons">add</span>
         Nueva playlist
       </button>
     </div>
   }
   
+  <!-- Modales de playlist -->
+  <app-playlist-config-modal
+    [isOpen]="showConfigModal()"
+    [playlist]="selectedPlaylist()"
+    (closeModal)="closeConfigModal()"
+    (openSongSelector)="openSongSelector($event)"
+    (playlistDeleted)="onPlaylistDeleted($event)"
+  />
+  
+  <app-song-selector-modal
+    [isOpen]="showSongSelector()"
+    [playlistId]="selectedPlaylistId()"
+    (closeModal)="closeSongSelector()"
+  />
+  
   @if (activeView() === 'queue') {
-    <div class="sidebar-content">
-      <h3>Próximas</h3>
-      <p class="queue-label">A continuación:</p>
-      <div class="song-list">
-        @for (song of queue; track song.id; let i = $index) {
-          <div class="song-item">
-            <span class="queue-number">{{ i + 1 }}</span>
-            <div class="song-item-info">
-              <span class="song-item-title">{{ song.title }}</span>
-              <span class="song-item-artist">{{ song.artist }}</span>
-            </div>
-            <span class="song-item-duration">{{ song.duration }}</span>
-          </div>
-        }
+    <div class="sidebar-content queue-view">
+      <div class="sidebar-header">
+        <h3>
+          <span class="material-icons header-icon">queue_music</span>
+          Cola de reproducción
+        </h3>
+        <span class="queue-count">{{ upcomingSongs.length }} pendientes</span>
       </div>
-      @if (queue.length === 0) {
-        <p class="empty-message">No hay canciones en la cola</p>
+      
+      @if (upcomingSongs.length === 0) {
+        <div class="queue-empty">
+          <span class="material-icons">playlist_play</span>
+          <p>No hay más canciones</p>
+          <span class="hint">Añade música desde la biblioteca</span>
+        </div>
+      } @else {
+        <p class="queue-label">A continuación:</p>
+        <div class="queue-list" cdkDropList (cdkDropListDropped)="onQueueDrop($event)">
+          @for (song of upcomingSongs; track song.id; let i = $index) {
+            <div 
+              class="queue-item" 
+              cdkDrag
+              [class.next]="i === 0"
+              (click)="onPlayFromQueue(song.queueIndex)"
+            >
+              <div class="drag-handle" cdkDragHandle>
+                <span class="material-icons">drag_indicator</span>
+              </div>
+              <img [src]="getCoverUrl(song)" alt="" class="queue-cover">
+              <div class="queue-info">
+                <span class="queue-title">{{ song.title }}</span>
+                <span class="queue-artist">{{ song.artist }}</span>
+              </div>
+              <span class="queue-duration">{{ formatDuration(song.duration) }}</span>
+              <button 
+                class="remove-btn" 
+                (click)="onRemoveFromQueue(song.queueIndex, $event)"
+                title="Quitar de la cola"
+              >
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          }
+        </div>
       }
     </div>
   }

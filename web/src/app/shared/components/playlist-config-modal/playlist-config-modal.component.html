@@ -1,0 +1,95 @@
+<app-modal 
+  [isOpen]="isOpen()" 
+  [title]="modalTitle()" 
+  (closeModal)="onClose()"
+>
+  <div class="playlist-config-form">
+    <!-- Campo nombre -->
+    <div class="form-group">
+      <label for="playlist-name">Nombre</label>
+      <input 
+        id="playlist-name"
+        type="text" 
+        class="form-input"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+        placeholder="Nombre de la playlist"
+        maxlength="50"
+      />
+    </div>
+    
+    <!-- Selector de icono -->
+    <div class="form-group">
+      <label>Icono</label>
+      <div class="icon-selector">
+        <button 
+          type="button" 
+          class="icon-preview"
+          (click)="toggleIconPicker()"
+        >
+          <span class="material-icons">{{ selectedIcon() }}</span>
+          <span class="material-icons arrow">expand_more</span>
+        </button>
+        
+        @if (showIconPicker()) {
+          <div class="icon-picker">
+            @for (iconOption of availableIcons; track iconOption.icon) {
+              <button 
+                type="button"
+                class="icon-option"
+                [class.selected]="selectedIcon() === iconOption.icon"
+                [title]="iconOption.label"
+                (click)="selectIcon(iconOption.icon)"
+              >
+                <span class="material-icons">{{ iconOption.icon }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+    
+    <!-- Botón gestionar canciones (solo en edición) -->
+    @if (isEditing()) {
+      <div class="form-group">
+        <label>Canciones</label>
+        <button 
+          type="button" 
+          class="btn-secondary full-width"
+          (click)="onManageSongs()"
+        >
+          <span class="material-icons">playlist_add</span>
+          Gestionar canciones ({{ currentPlaylist()?.songCount || 0 }})
+        </button>
+      </div>
+    }
+    
+    <!-- Acciones -->
+    <div class="form-actions">
+      @if (isEditing()) {
+        <button 
+          type="button" 
+          class="btn-danger"
+          (click)="onDelete()"
+        >
+          <span class="material-icons">delete</span>
+          Eliminar
+        </button>
+      }
+      
+      <div class="spacer"></div>
+      
+      <button 
+        type="button" 
+        class="btn-primary"
+        [disabled]="saving()"
+        (click)="onSave()"
+      >
+        @if (saving()) {
+          <span class="material-icons spinning">sync</span>
+        }
+        {{ isEditing() ? 'Guardar' : 'Crear' }}
+      </button>
+    </div>
+  </div>
+</app-modal>

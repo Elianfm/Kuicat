@@ -1,17 +1,20 @@
 export interface Playlist {
   id: number;
   name: string;
+  icon: string;
   type: PlaylistType;
-  filterCriteria: FilterCriteria | null;
+  filterCriteria: string | null;
   songIds: number[];
-  createdAt: Date;
+  songCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type PlaylistType = 'genre' | 'artist' | 'tags' | 'custom';
+export type PlaylistType = 'GENRE' | 'ARTIST' | 'TAGS' | 'CUSTOM';
 
-export interface FilterCriteria {
-  genres?: string[];
-  artists?: string[];
-  tags?: string[];
-  minRating?: number;
+export interface PlaylistCreate {
+  name: string;
+  icon?: string;
+  type?: PlaylistType;
+  songIds?: number[];
 }

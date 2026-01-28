@@ -6,14 +6,15 @@
     
     <!-- Vista principal (video/cover) -->
     <app-main-view 
-      [coverUrl]="currentSong()?.filePath ? 'img/default-cover.webp' : 'img/default-cover.webp'"
-      [songTitle]="currentSong()?.title || 'Sin canción'"
       [(leftSidebar)]="leftSidebar"
       [(rightSidebar)]="rightSidebar"
     />
     
     <!-- Sidebar derecha -->
-    <app-right-sidebar [activeView]="rightSidebar()" />
+    <app-right-sidebar 
+      [activeView]="rightSidebar()" 
+      [currentSongId]="currentSong()?.id || 0"
+    />
   </div>
   
   <!-- Cards flotantes (posicionadas respecto a la pantalla) -->
@@ -22,15 +23,15 @@
     [songId]="currentSong()?.id || null"
     [title]="currentSong()?.title || 'Sin canción'" 
     [artist]="currentSong()?.artist || 'Artista desconocido'"
-    [cover]="'img/default-cover.webp'"
+    [cover]="getCoverUrl(currentSong())"
     [rankPosition]="currentSong()?.rankPosition || null"
   />
   <app-next-song-card 
     class="floating-card-right"
     [songId]="nextSong()?.id || null"
     [title]="nextSong()?.title || 'No hay siguiente'" 
-    [artist]="nextSong()?.artist || ''"
-    [cover]="'img/default-cover.webp'"
+    [artist]="nextSong()?.artist || 'Artista desconocido'"
+    [cover]="getCoverUrl(nextSong())"
     [rankPosition]="nextSong()?.rankPosition || null"
   />
   

@@ -20,7 +20,7 @@
               <div class="rank-tooltip rank-tooltip-up">
                 <span class="tooltip-action">Subir a #{{ rankPosition()! - 1 }}</span>
                 <div class="tooltip-song">
-                  <img src="img/default-cover.webp" alt="" class="tooltip-cover">
+                  <img [src]="prevNeighborCover" alt="" class="tooltip-cover">
                   <div class="tooltip-info">
                     <span class="tooltip-title">{{ prevNeighbor.title }}</span>
                     <span class="tooltip-artist">{{ prevNeighbor.artist }}</span>
@@ -45,7 +45,7 @@
               <div class="rank-tooltip rank-tooltip-down">
                 <span class="tooltip-action">Bajar a #{{ rankPosition()! + 1 }}</span>
                 <div class="tooltip-song">
-                  <img src="img/default-cover.webp" alt="" class="tooltip-cover">
+                  <img [src]="nextNeighborCover" alt="" class="tooltip-cover">
                   <div class="tooltip-info">
                     <span class="tooltip-title">{{ nextNeighbor.title }}</span>
                     <span class="tooltip-artist">{{ nextNeighbor.artist }}</span>
@@ -87,7 +87,7 @@
       @if (showPlaylistDropdown()) {
         <div class="playlist-dropdown">
           <span class="dropdown-title">Playlists:</span>
-          @for (playlist of playlists(); track playlist.id) {
+          @for (playlist of playlistsWithStatus(); track playlist.id) {
             <button 
               class="dropdown-item" 
               [class.in-playlist]="playlist.hasSong"
@@ -99,6 +99,9 @@
                 {{ playlist.hasSong ? 'remove_circle' : 'add_circle' }}
               </span>
             </button>
+          }
+          @empty {
+            <span class="dropdown-empty">No hay playlists</span>
           }
         </div>
       }

@@ -1,9 +1,10 @@
-import { Component, input, output, inject } from '@angular/core';
+import { Component, input, output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../toast/toast.component';
 import { ConfirmDialogService } from '../confirm-dialog/confirm-dialog.component';
 import { RankingService } from '../../../core/services/ranking.service';
 import { PlayerService } from '../../../core/services/player.service';
+import { ThumbnailService } from '../../../core/services/thumbnail.service';
 import { Song } from '../../../models/song.model';
 
 /** Información mínima de canción vecina en ranking */
@@ -27,6 +28,11 @@ export class NextSongCardComponent {
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly rankingService = inject(RankingService);
   private readonly playerService = inject(PlayerService);
+  private readonly thumbnailService = inject(ThumbnailService);
+  
+  // Señal para forzar re-render cuando se generan thumbnails
+  private readonly thumbnailVersion = signal(0);
+  private readonly thumbnailCache = new Map<number, string>();
   
   // Song data
   songId = input<number | null>(null);
@@ -57,6 +63,42 @@ export class NextSongCardComponent {
   get nextNeighbor(): Song | null {
     const pos = this.rankPosition();
     return pos ? this.rankingService.getNextSong(pos) : null;
+  }
+  
+  // Covers de vecinos con thumbnail support
+  get prevNeighborCover(): string {
+    return this.prevNeighbor ? this.getCoverUrl(this.prevNeighbor) : 'img/default-cover.webp';
+  }
+  
+  get nextNeighborCover(): string {
+    return this.nextNeighbor ? this.getCoverUrl(this.nextNeighbor) : 'img/default-cover.webp';
+  }
+  
+  /**
+   * Obtiene la URL del cover para una canción con soporte de thumbnails.
+   */
+  getCoverUrl(song: Song): string {
+    this.thumbnailVersion(); // Para reactividad
+    
+    const cached = this.thumbnailCache.get(song.id);
+    if (cached) return cached;
+    
+    if (this.isVideoFile(song.filePath)) {
+      this.thumbnailService.getThumbnail(song.id, song.filePath).then(thumbnail => {
+        if (thumbnail) {
+          this.thumbnailCache.set(song.id, thumbnail);
+          this.thumbnailVersion.update(v => v + 1);
+        }
+      });
+    }
+    
+    return 'img/default-cover.webp';
+  }
+  
+  private isVideoFile(filePath: string): boolean {
+    const videoExtensions = new Set(['mp4', 'webm', 'mkv', 'avi', 'mov']);
+    const ext = filePath.split('.').pop()?.toLowerCase() || '';
+    return videoExtensions.has(ext);
   }
   
   constructor() {
