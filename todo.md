@@ -250,6 +250,12 @@ Tabla: playlist_songs
 
 ### Optimizaciones
 - [x] Thumbnail queue system: Máximo 2 generaciones concurrentes para evitar saturar el navegador
+- [x] **Auto-fetch duración de videos**: 
+  - [x] `DurationService` Angular con cola serializada
+  - [x] Obtención de duración via HTML5 `preload="metadata"`
+  - [x] Actualización automática en BD via PATCH endpoint
+  - [x] Delay de 150ms entre operaciones para evitar SQLITE_BUSY
+  - [x] Método `updateSongLocally()` en RankingService para actualizar UI sin recargar
 
 ### 5. Controles de Reproducción
 - [x] Reproducción real de audio/video (HTML5)
