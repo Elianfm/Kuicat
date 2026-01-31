@@ -58,6 +58,9 @@ export class LeftSidebarComponent implements OnInit {
   editingLyrics = signal<boolean>(false);
   lyricsEditValue = '';
   
+  // Estado de auto-fill
+  autoFillLoading = signal<boolean>(false);
+  
   // Info de la canción actual
   songInfo = signal<SongInfo>({
     id: null,
@@ -400,5 +403,49 @@ export class LeftSidebarComponent implements OnInit {
   cancelLyricsEditing(): void {
     this.editingLyrics.set(false);
     this.lyricsEditValue = this.lyrics();
+  }
+  
+  // === AUTO-FILL CON IA ===
+  
+  /**
+   * Usa IA (OpenAI) para auto-completar la metadata de la canción.
+   * Analiza el título/nombre de archivo y sugiere: título, artista, álbum, género, año, descripción.
+   */
+  autoFillWithAI(): void {
+    const songId = this.songInfo().id;
+    if (!songId) {
+      this.toastService.error('No hay canción seleccionada');
+      return;
+    }
+    
+    this.autoFillLoading.set(true);
+    
+    // Llamar al endpoint que obtiene y aplica la metadata de IA
+    this.http.post<Song>(`${this.apiUrl}/${songId}/auto-fill-apply`, {}, { observe: 'response' })
+      .subscribe({
+        next: (response) => {
+          this.autoFillLoading.set(false);
+          
+          if (response.status === 204 || !response.body) {
+            this.toastService.warning('Configura tu API key de OpenAI en Ajustes');
+            return;
+          }
+          
+          const updatedSong = response.body;
+          
+          // Actualizar la info local
+          this.updateSongInfo(updatedSong);
+          
+          // Actualizar en el PlayerService
+          this.playerService.updateCurrentSong(updatedSong);
+          
+          this.toastService.success('Metadata actualizada con IA ✨');
+        },
+        error: (err) => {
+          this.autoFillLoading.set(false);
+          console.error('Error auto-fill:', err);
+          this.toastService.error('Error al obtener metadata de IA');
+        }
+      });
   }
 }

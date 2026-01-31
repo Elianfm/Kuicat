@@ -47,7 +47,22 @@
   
   @if (activeView() === 'info') {
     <div class="sidebar-content info-view">
-      <h3>Info</h3>
+      <div class="info-header">
+        <h3>Info</h3>
+        <button 
+          class="auto-fill-btn" 
+          (click)="autoFillWithAI()" 
+          [disabled]="autoFillLoading() || !songInfo().id"
+          title="Auto-completar con IA"
+        >
+          @if (autoFillLoading()) {
+            <span class="material-icons spinning">sync</span>
+          } @else {
+            <span class="material-icons">auto_fix_high</span>
+          }
+          <span class="btn-text">Auto-fill</span>
+        </button>
+      </div>
       <div class="info-container">
         <!-- Título -->
         <div class="info-item" [class.editing]="editingField() === 'title'">

@@ -213,3 +213,133 @@
     }
   }
 }
+
+// Separador
+.config-separator {
+  border-top: 1px solid $border-color;
+  margin: $spacing-sm 0;
+}
+
+// Sección de configuración
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-family: $font-display;
+  font-size: $font-size-lg;
+  color: $text-primary;
+  margin: 0;
+  
+  .material-icons {
+    font-size: 20px;
+    color: $accent-primary;
+  }
+}
+
+.section-description {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin: 0;
+}
+
+// API Key fields
+.api-key-field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-md;
+  background: rgba($bg-tertiary, 0.5);
+  border-radius: $border-radius;
+  border: 1px solid $border-color;
+}
+
+.api-key-input-group {
+  display: flex;
+  gap: $spacing-sm;
+  
+  .config-input {
+    flex: 1;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+  }
+}
+
+.save-key-btn {
+  background: $accent-primary;
+  border: none;
+  border-radius: $border-radius;
+  color: $bg-primary;
+  cursor: pointer;
+  padding: $spacing-sm $spacing-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+  
+  .material-icons {
+    font-size: 18px;
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+  
+  &:hover:not(:disabled) {
+    background: $accent-hover;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.key-status {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  background: rgba($success, 0.1);
+  border-radius: $border-radius;
+  font-size: $font-size-sm;
+  color: $success;
+  
+  .material-icons {
+    font-size: 16px;
+  }
+  
+  &.configured {
+    background: rgba($success, 0.1);
+    color: $success;
+  }
+}
+
+.delete-key-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: $error;
+  cursor: pointer;
+  padding: $spacing-xs;
+  border-radius: $border-radius;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+  opacity: 0.7;
+  
+  .material-icons {
+    font-size: 16px;
+  }
+  
+  &:hover {
+    opacity: 1;
+    background: rgba($error, 0.1);
+  }
+}

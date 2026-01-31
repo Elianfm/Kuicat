@@ -294,8 +294,10 @@ Tabla: playlist_songs
 - [x] Filtros Top X para ranking
 
 ### Fase 4: IA y Sugerencias
-- [ ] Integración Spring AI
-- [ ] Modo de reproducción con sugerencias IA
+- [x] Integración Spring AI (OpenAI gpt-4o-mini)
+- [x] Configuración segura de API keys (AES-256-GCM, cifrado por PC)
+- [x] Auto-fill de metadata con IA (título, artista, álbum, género, año, descripción)
+- [ ] Modo de reproducción con sugerencias IA (Radio IA)
 - [ ] Algoritmo de contexto para el LLM
 
 ### Fase 5: Pulido y Distribución
@@ -314,9 +316,9 @@ Tabla: playlist_songs
 ---
 
 ## 📋 Decisiones Técnicas Pendientes
-- [ ] ¿Qué LLM usar para las sugerencias? (OpenAI, Claude, Ollama local, etc.)
+- [x] ¿Qué LLM usar para las sugerencias? → **OpenAI gpt-4o-mini** ($0.15/1M input, $0.60/1M output)
 - [ ] ¿Cada cuántas canciones hacer la llamada al LLM?
-- [ ] ¿Incluir soporte para video musical?
+- [x] ¿Incluir soporte para video musical? → Sí (MP4, M4A ya soportados)
 
 ---
 

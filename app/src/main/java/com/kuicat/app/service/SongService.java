@@ -195,7 +195,7 @@ public class SongService {
         mapper.updateSongFromDTO(song, updateDTO);
         Song saved = songRepository.save(song);
         
-        log.info("Canción actualizada: {} - {}", saved.getId(), saved.getTitle());
+        log.debug("Canción actualizada: {} - {}", saved.getId(), saved.getTitle());
         return mapper.toSongDTO(saved);
     }
     

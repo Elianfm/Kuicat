@@ -68,6 +68,96 @@
       }
     </div>
     
+    <!-- Separador -->
+    <div class="config-separator"></div>
+    
+    <!-- API Keys Section -->
+    <div class="config-section">
+      <h3 class="section-title">
+        <span class="material-icons">key</span>
+        API Keys (IA)
+      </h3>
+      <p class="section-description">
+        Configura las API keys para las funciones de IA.
+      </p>
+      
+      <!-- OpenAI API Key -->
+      <div class="api-key-field">
+        <label class="config-label">
+          <span class="material-icons">smart_toy</span>
+          OpenAI API Key
+        </label>
+        @if (openaiKeyMasked()) {
+          <div class="key-status configured">
+            <span class="material-icons">check_circle</span>
+            <span>Configurada: {{ openaiKeyMasked() }}</span>
+            <button class="delete-key-btn" (click)="deleteApiKey('openai_api_key')" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        }
+        <div class="api-key-input-group">
+          <input 
+            type="password" 
+            class="config-input"
+            [ngModel]="openaiApiKey()"
+            (ngModelChange)="openaiApiKey.set($event)"
+            placeholder="sk-..."
+            autocomplete="off"
+          >
+          <button 
+            class="save-key-btn" 
+            (click)="saveOpenAIKey()"
+            [disabled]="savingOpenAI() || !openaiApiKey()"
+          >
+            @if (savingOpenAI()) {
+              <span class="material-icons spinning">refresh</span>
+            } @else {
+              <span class="material-icons">save</span>
+            }
+          </button>
+        </div>
+      </div>
+      
+      <!-- Replicate API Key -->
+      <div class="api-key-field">
+        <label class="config-label">
+          <span class="material-icons">record_voice_over</span>
+          Replicate API Key (TTS)
+        </label>
+        @if (replicateKeyMasked()) {
+          <div class="key-status configured">
+            <span class="material-icons">check_circle</span>
+            <span>Configurada: {{ replicateKeyMasked() }}</span>
+            <button class="delete-key-btn" (click)="deleteApiKey('replicate_api_key')" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        }
+        <div class="api-key-input-group">
+          <input 
+            type="password" 
+            class="config-input"
+            [ngModel]="replicateApiKey()"
+            (ngModelChange)="replicateApiKey.set($event)"
+            placeholder="r8_..."
+            autocomplete="off"
+          >
+          <button 
+            class="save-key-btn" 
+            (click)="saveReplicateKey()"
+            [disabled]="savingReplicate() || !replicateApiKey()"
+          >
+            @if (savingReplicate()) {
+              <span class="material-icons spinning">refresh</span>
+            } @else {
+              <span class="material-icons">save</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+    
     <!-- Acciones -->
     <div class="config-actions">
       <button class="btn-cancel" (click)="onClose()">

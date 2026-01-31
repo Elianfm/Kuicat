@@ -1,6 +1,7 @@
 package com.kuicat.app.controller;
 
 import com.kuicat.app.dto.*;
+import com.kuicat.app.service.MetadataAIService;
 import com.kuicat.app.service.SongService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class SongController {
     
     private final SongService songService;
+    private final MetadataAIService metadataAIService;
     
     // ==================== CONSULTAS ====================
     
@@ -241,5 +243,53 @@ public class SongController {
     ) {
         String notes = body.get("notes");
         return ResponseEntity.ok(songService.updateNotes(id, notes));
+    }
+    
+    // ==================== IA ====================
+    
+    /**
+     * Auto-completa metadata de una canción usando IA (OpenAI).
+     * Analiza el título y nombre del archivo para inferir artista, álbum, género, etc.
+     * 
+     * POST /api/songs/123/auto-fill
+     * 
+     * @return Metadata sugerida por la IA (no aplica cambios automáticamente)
+     */
+    @PostMapping("/{id}/auto-fill")
+    public ResponseEntity<SongMetadataDTO> autoFillMetadata(@PathVariable Long id) {
+        SongDTO song = songService.findById(id);
+        
+        return metadataAIService.autoFillMetadata(song)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.noContent().build());
+    }
+    
+    /**
+     * Auto-completa y aplica metadata de una canción usando IA.
+     * Primero obtiene sugerencias de la IA y luego actualiza la canción.
+     * 
+     * POST /api/songs/123/auto-fill-apply
+     * 
+     * @return Canción actualizada con la metadata de la IA
+     */
+    @PostMapping("/{id}/auto-fill-apply")
+    public ResponseEntity<SongDTO> autoFillAndApply(@PathVariable Long id) {
+        SongDTO song = songService.findById(id);
+        
+        return metadataAIService.autoFillMetadata(song)
+            .map(metadata -> {
+                // Aplicar solo campos no nulos
+                SongUpdateDTO update = SongUpdateDTO.builder()
+                    .title(metadata.getTitle() != null ? metadata.getTitle() : song.getTitle())
+                    .artist(metadata.getArtist())
+                    .album(metadata.getAlbum())
+                    .genre(metadata.getGenre())
+                    .year(metadata.getYear())
+                    .description(metadata.getDescription())
+                    .build();
+                
+                return ResponseEntity.ok(songService.update(id, update));
+            })
+            .orElse(ResponseEntity.noContent().build());
     }
 }
