@@ -107,6 +107,68 @@ public class SongService {
     }
     
     /**
+     * Obtiene todos los artistas con el conteo de canciones.
+     * Ordenados por número de canciones (descendente).
+     */
+    public List<CategoryCountDTO> getArtistsWithCount() {
+        List<String> artists = songRepository.findAllArtists();
+        return artists.stream()
+                .map(artist -> CategoryCountDTO.builder()
+                        .name(artist)
+                        .count(songRepository.countByArtistIgnoreCase(artist))
+                        .build())
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .toList();
+    }
+    
+    /**
+     * Obtiene todos los géneros con el conteo de canciones.
+     * Ordenados por número de canciones (descendente).
+     */
+    public List<CategoryCountDTO> getGenresWithCount() {
+        List<String> genres = songRepository.findAllGenres();
+        return genres.stream()
+                .map(genre -> CategoryCountDTO.builder()
+                        .name(genre)
+                        .count(songRepository.countByGenreIgnoreCase(genre))
+                        .build())
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .toList();
+    }
+    
+    /**
+     * Obtiene canciones de un artista específico.
+     */
+    public List<SongDTO> getSongsByArtist(String artist) {
+        List<Song> songs = songRepository.findByArtistIgnoreCase(artist);
+        return songs.stream()
+                .map(song -> {
+                    SongDTO dto = mapper.toSongDTO(song);
+                    if (song.getRanking() != null) {
+                        dto.setRankPosition(rankingService.calculatePosition(song.getRanking()));
+                    }
+                    return dto;
+                })
+                .toList();
+    }
+    
+    /**
+     * Obtiene canciones de un género específico.
+     */
+    public List<SongDTO> getSongsByGenre(String genre) {
+        List<Song> songs = songRepository.findByGenreIgnoreCase(genre);
+        return songs.stream()
+                .map(song -> {
+                    SongDTO dto = mapper.toSongDTO(song);
+                    if (song.getRanking() != null) {
+                        dto.setRankPosition(rankingService.calculatePosition(song.getRanking()));
+                    }
+                    return dto;
+                })
+                .toList();
+    }
+    
+    /**
      * Obtiene las canciones más reproducidas.
      */
     public List<SongDTO> getMostPlayed() {

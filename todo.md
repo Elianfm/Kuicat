@@ -221,11 +221,18 @@ Tabla: playlist_songs
 - [x] Eliminado campo rating (puntuación 1-10) - reemplazado por ranking
 
 ### 3. Playlists Dinámicas
-- [ ] Crear playlists por **género**
-- [ ] Crear playlists por **artista**
+- [x] **Playlist Rápida** - Reproducción instantánea por artista o género
+  - [x] Backend: Endpoints `/api/songs/artists/count`, `/api/songs/genres/count`
+  - [x] Backend: Endpoints `/api/songs/by-artist`, `/api/songs/by-genre`
+  - [x] Frontend: Servicio `QuickPlaylistService`
+  - [x] Frontend: UI integrada en sidebar derecho con buscador
+  - [x] Secciones colapsables para Artistas y Géneros
+  - [x] Contador de canciones por categoría
+- [ ] Crear playlists permanentes por **género**
+- [ ] Crear playlists permanentes por **artista**
 - [ ] Crear playlists por **etiquetas**
-- [ ] Playlists personalizadas (selección manual)
-- [ ] Guardar y cargar playlists
+- [x] Playlists personalizadas (selección manual)
+- [x] Guardar y cargar playlists
 
 ### 4. Modos de Reproducción
 - [x] **Modo Secuencial**: reproducción en orden original

@@ -74,6 +74,126 @@
         </div>
       </div>
       
+      <!-- Quick Playlist: Reproducción rápida por artista/género -->
+      <h3 class="section-title quick-playlist-title">
+        <span class="material-icons">bolt</span>
+        Playlist Rápida
+      </h3>
+      
+      <!-- Buscador -->
+      <div class="quick-search">
+        <span class="material-icons search-icon">search</span>
+        <input 
+          type="text" 
+          placeholder="Buscar artista o género..."
+          [ngModel]="quickPlaylistService.searchQuery()"
+          (ngModelChange)="quickPlaylistService.searchQuery.set($event)"
+        >
+        @if (quickPlaylistService.searchQuery()) {
+          <button class="clear-btn" (click)="quickPlaylistService.clearSearch()">
+            <span class="material-icons">close</span>
+          </button>
+        }
+      </div>
+      
+      <!-- Resultados de búsqueda -->
+      @if (quickPlaylistService.searchQuery()) {
+        <div class="quick-search-results">
+          @if (quickPlaylistService.searchResults().length === 0) {
+            <div class="empty-state small">
+              <span>Sin resultados</span>
+            </div>
+          } @else {
+            @for (result of quickPlaylistService.searchResults(); track result.name) {
+              <div class="quick-item" (click)="result.type === 'artist' ? onPlayByArtist(result.name) : onPlayByGenre(result.name)">
+                <button class="play-btn" title="Reproducir">
+                  <span class="material-icons">play_arrow</span>
+                </button>
+                <span class="material-icons category-icon">{{ result.type === 'artist' ? 'person' : 'library_music' }}</span>
+                <div class="quick-info">
+                  <span class="quick-name">{{ result.name }}</span>
+                  <span class="quick-count">{{ result.count }} canciones</span>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      } @else {
+        <!-- Sección Por Artista -->
+        <div class="quick-section">
+          <button class="section-header" (click)="toggleArtistsSection()">
+            <span class="material-icons section-icon">person</span>
+            <span class="section-name">Por Artista</span>
+            <span class="section-count">({{ quickPlaylistService.artists().length }})</span>
+            <span class="material-icons expand-icon">{{ quickPlaylistArtistsExpanded() ? 'expand_less' : 'expand_more' }}</span>
+          </button>
+          
+          @if (quickPlaylistArtistsExpanded()) {
+            <div class="quick-list">
+              @if (quickPlaylistService.loading()) {
+                <div class="loading-state small">
+                  <span class="material-icons spinning">sync</span>
+                </div>
+              } @else if (quickPlaylistService.artists().length === 0) {
+                <div class="empty-state small">
+                  <span>Sin artistas</span>
+                </div>
+              } @else {
+                @for (artist of quickPlaylistService.artists(); track artist.name) {
+                  <div class="quick-item" (click)="onPlayByArtist(artist.name)">
+                    <button class="play-btn" title="Reproducir">
+                      <span class="material-icons">play_arrow</span>
+                    </button>
+                    <span class="material-icons category-icon">person</span>
+                    <div class="quick-info">
+                      <span class="quick-name">{{ artist.name }}</span>
+                      <span class="quick-count">{{ artist.count }} canciones</span>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+        
+        <!-- Sección Por Género -->
+        <div class="quick-section">
+          <button class="section-header" (click)="toggleGenresSection()">
+            <span class="material-icons section-icon">library_music</span>
+            <span class="section-name">Por Género</span>
+            <span class="section-count">({{ quickPlaylistService.genres().length }})</span>
+            <span class="material-icons expand-icon">{{ quickPlaylistGenresExpanded() ? 'expand_less' : 'expand_more' }}</span>
+          </button>
+          
+          @if (quickPlaylistGenresExpanded()) {
+            <div class="quick-list">
+              @if (quickPlaylistService.loading()) {
+                <div class="loading-state small">
+                  <span class="material-icons spinning">sync</span>
+                </div>
+              } @else if (quickPlaylistService.genres().length === 0) {
+                <div class="empty-state small">
+                  <span>Sin géneros</span>
+                </div>
+              } @else {
+                @for (genre of quickPlaylistService.genres(); track genre.name) {
+                  <div class="quick-item" (click)="onPlayByGenre(genre.name)">
+                    <button class="play-btn" title="Reproducir">
+                      <span class="material-icons">play_arrow</span>
+                    </button>
+                    <span class="material-icons category-icon">library_music</span>
+                    <div class="quick-info">
+                      <span class="quick-name">{{ genre.name }}</span>
+                      <span class="quick-count">{{ genre.count }} canciones</span>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+      
       <h3 class="section-title">Mis Playlists</h3>
       <div class="playlist-list">
         @if (playlistService.loading()) {

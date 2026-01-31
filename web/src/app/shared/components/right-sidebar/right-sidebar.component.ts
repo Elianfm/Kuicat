@@ -1,5 +1,6 @@
 import { Component, input, output, signal, inject, OnInit, OnDestroy, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Subscription } from 'rxjs';
 import { ToastService } from '../toast/toast.component';
@@ -8,15 +9,16 @@ import { PlayerService } from '../../../core/services/player.service';
 import { ThumbnailService } from '../../../core/services/thumbnail.service';
 import { PlaylistService } from '../../../core/services/playlist.service';
 import { LibraryService } from '../../../core/services/library.service';
+import { QuickPlaylistService } from '../../../core/services/quick-playlist.service';
 import { PlaylistConfigModalComponent } from '../playlist-config-modal/playlist-config-modal.component';
 import { SongSelectorModalComponent } from '../song-selector-modal/song-selector-modal.component';
-import { Song } from '../../../models';
+import { Song, QuickPlaylistType } from '../../../models';
 import { Playlist } from '../../../models/playlist.model';
 
 @Component({
   selector: 'app-right-sidebar',
   standalone: true,
-  imports: [CommonModule, DragDropModule, PlaylistConfigModalComponent, SongSelectorModalComponent],
+  imports: [CommonModule, FormsModule, DragDropModule, PlaylistConfigModalComponent, SongSelectorModalComponent],
   templateUrl: './right-sidebar.component.html',
   styleUrl: './right-sidebar.component.scss'
 })
@@ -27,6 +29,7 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
   private readonly libraryService = inject(LibraryService);
   readonly playlistService = inject(PlaylistService);
   readonly playerService = inject(PlayerService);
+  readonly quickPlaylistService = inject(QuickPlaylistService);
   private rankingChangedSub?: Subscription;
   
   // Señal para forzar re-render cuando se generan thumbnails
@@ -52,6 +55,11 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
   selectedPlaylist = signal<Playlist | null>(null);
   showSongSelector = signal(false);
   selectedPlaylistId = signal<number | null>(null);
+  
+  // Quick Playlist: Secciones expandidas
+  quickPlaylistArtistsExpanded = signal(false);
+  quickPlaylistGenresExpanded = signal(false);
+
   
   // Tab activa en vista de cola
   queueTab = signal<'upcoming' | 'previous'>('upcoming');
@@ -119,6 +127,58 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
         this.toastService.error('Error al cargar la biblioteca');
       }
     });
+  }
+  
+  /**
+   * Reproduce todas las canciones de un artista (Quick Playlist).
+   */
+  onPlayByArtist(artistName: string): void {
+    this.quickPlaylistService.getSongsByArtist(artistName).subscribe({
+      next: (songs) => {
+        if (songs.length > 0) {
+          this.playerService.loadQueue(songs, 0, true, null);
+          this.toastService.success(`Reproduciendo: ${artistName}`);
+        } else {
+          this.toastService.info('No hay canciones de este artista');
+        }
+      },
+      error: () => {
+        this.toastService.error('Error al cargar canciones del artista');
+      }
+    });
+  }
+  
+  /**
+   * Reproduce todas las canciones de un género (Quick Playlist).
+   */
+  onPlayByGenre(genreName: string): void {
+    this.quickPlaylistService.getSongsByGenre(genreName).subscribe({
+      next: (songs) => {
+        if (songs.length > 0) {
+          this.playerService.loadQueue(songs, 0, true, null);
+          this.toastService.success(`Reproduciendo: ${genreName}`);
+        } else {
+          this.toastService.info('No hay canciones de este género');
+        }
+      },
+      error: () => {
+        this.toastService.error('Error al cargar canciones del género');
+      }
+    });
+  }
+  
+  /**
+   * Toggle expansión de sección de artistas.
+   */
+  toggleArtistsSection(): void {
+    this.quickPlaylistArtistsExpanded.update(v => !v);
+  }
+  
+  /**
+   * Toggle expansión de sección de géneros.
+   */
+  toggleGenresSection(): void {
+    this.quickPlaylistGenresExpanded.update(v => !v);
   }
   
   onPlayPlaylist(playlistId: number): void {
@@ -190,6 +250,11 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
       this.rankingService.loadRanking();
     }
     
+    // Cargar categorías para Quick Playlist
+    if (this.activeView() === 'playlist') {
+      this.quickPlaylistService.loadCategories();
+    }
+    
     // Suscribirse a cambios en el ranking para recargar automáticamente
     this.rankingChangedSub = this.rankingService.rankingChanged$.subscribe(() => {
       // El estado ya se actualiza en el servicio, no necesitamos hacer nada aquí
@@ -203,6 +268,10 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
   ngOnChanges(): void {
     if (this.activeView() === 'ranking') {
       this.rankingService.loadRanking();
+    }
+    // Cargar categorías cuando se abra la vista de playlist
+    if (this.activeView() === 'playlist') {
+      this.quickPlaylistService.loadCategories();
     }
   }
   

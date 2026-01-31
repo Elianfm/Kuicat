@@ -111,6 +111,48 @@ public class SongController {
         return ResponseEntity.ok(songService.getAllGenres());
     }
     
+    // ==================== QUICK PLAYLIST ====================
+    
+    /**
+     * Obtiene todos los artistas con el conteo de canciones.
+     * 
+     * GET /api/songs/artists/count
+     */
+    @GetMapping("/artists/count")
+    public ResponseEntity<List<CategoryCountDTO>> getArtistsWithCount() {
+        return ResponseEntity.ok(songService.getArtistsWithCount());
+    }
+    
+    /**
+     * Obtiene todos los géneros con el conteo de canciones.
+     * 
+     * GET /api/songs/genres/count
+     */
+    @GetMapping("/genres/count")
+    public ResponseEntity<List<CategoryCountDTO>> getGenresWithCount() {
+        return ResponseEntity.ok(songService.getGenresWithCount());
+    }
+    
+    /**
+     * Obtiene canciones de un artista específico.
+     * 
+     * GET /api/songs/by-artist?name=Daft%20Punk
+     */
+    @GetMapping("/by-artist")
+    public ResponseEntity<List<SongDTO>> getSongsByArtist(@RequestParam("name") String artist) {
+        return ResponseEntity.ok(songService.getSongsByArtist(artist));
+    }
+    
+    /**
+     * Obtiene canciones de un género específico.
+     * 
+     * GET /api/songs/by-genre?name=Rock
+     */
+    @GetMapping("/by-genre")
+    public ResponseEntity<List<SongDTO>> getSongsByGenre(@RequestParam("name") String genre) {
+        return ResponseEntity.ok(songService.getSongsByGenre(genre));
+    }
+    
     /**
      * Obtiene las canciones más reproducidas.
      * 

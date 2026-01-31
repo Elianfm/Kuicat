@@ -957,3 +957,224 @@
 .cdk-drop-list-dragging .queue-item:not(.cdk-drag-placeholder) {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
+
+// ==================== QUICK PLAYLIST ====================
+
+.quick-playlist-title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-xl;
+  
+  .material-icons {
+    font-size: 18px;
+    color: $accent-primary;
+  }
+}
+
+.quick-search {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $border-radius;
+  margin-bottom: $spacing-md;
+  border: 1px solid transparent;
+  transition: border-color $transition-fast;
+  
+  &:focus-within {
+    border-color: $accent-primary;
+  }
+  
+  .search-icon {
+    font-size: 18px;
+    color: $text-muted;
+  }
+  
+  input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: $text-primary;
+    font-size: $font-size-sm;
+    font-family: $font-body;
+    
+    &::placeholder {
+      color: $text-muted;
+    }
+  }
+  
+  .clear-btn {
+    background: transparent;
+    border: none;
+    color: $text-muted;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all $transition-fast;
+    
+    .material-icons {
+      font-size: 16px;
+    }
+    
+    &:hover {
+      color: $text-primary;
+      background: rgba($text-primary, 0.1);
+    }
+  }
+}
+
+.quick-search-results {
+  margin-bottom: $spacing-lg;
+}
+
+.quick-section {
+  margin-bottom: $spacing-sm;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  background: transparent;
+  border: none;
+  border-radius: $border-radius;
+  cursor: pointer;
+  color: $text-primary;
+  transition: background-color $transition-fast;
+  
+  &:hover {
+    background: $bg-tertiary;
+  }
+  
+  .section-icon {
+    font-size: 18px;
+    color: $text-muted;
+  }
+  
+  .section-name {
+    flex: 1;
+    text-align: left;
+    font-size: $font-size-sm;
+    font-weight: 500;
+  }
+  
+  .section-count {
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+  
+  .expand-icon {
+    font-size: 18px;
+    color: $text-muted;
+  }
+}
+
+.quick-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-left: $spacing-md;
+  
+  // Scrollbar minimalista
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $text-muted;
+    border-radius: 2px;
+    
+    &:hover {
+      background: $text-secondary;
+    }
+  }
+}
+
+.quick-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+  
+  &:hover {
+    background: $bg-tertiary;
+    
+    .play-btn {
+      opacity: 1;
+    }
+  }
+  
+  .play-btn {
+    opacity: 0;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 50%;
+    background: $accent-primary;
+    border: none;
+    color: $bg-primary;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all $transition-fast;
+    
+    .material-icons {
+      font-size: 16px;
+    }
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+  
+  .category-icon {
+    font-size: 16px;
+    color: $text-muted;
+  }
+  
+  .quick-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .quick-name {
+    font-size: $font-size-sm;
+    color: $text-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .quick-count {
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+}
+
+.loading-state.small,
+.empty-state.small {
+  padding: $spacing-sm;
+  font-size: $font-size-xs;
+  
+  .material-icons {
+    font-size: 16px;
+  }
+}
+
