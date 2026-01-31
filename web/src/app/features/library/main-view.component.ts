@@ -26,6 +26,7 @@ export class MainViewComponent implements AfterViewInit {
   isVideo = this.playerService.isVideo;
   currentSong = this.playerService.currentSong;
   isPlaying = this.playerService.isPlaying;
+  isPlayingRadio = this.playerService.isPlayingRadioAnnouncement;
   
   // Para reactividad de thumbnails
   private readonly thumbnailVersion = signal(0);
@@ -33,6 +34,11 @@ export class MainViewComponent implements AfterViewInit {
   
   // Cover de la canción actual (computed con thumbnail dinámico)
   coverUrl = computed(() => {
+    // Si está reproduciendo anuncio de radio, mostrar radio cover
+    if (this.isPlayingRadio()) {
+      return 'img/radio-cover.webp';
+    }
+    
     const song = this.currentSong();
     if (!song) return 'img/default-cover.webp';
     

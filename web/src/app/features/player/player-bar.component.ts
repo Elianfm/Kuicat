@@ -1,6 +1,10 @@
 import { Component, output, HostListener, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PlayerService } from '../../core/services/player.service';
+import { RadioService } from '../../core/services/radio.service';
+import { SettingsService } from '../../core/services/settings.service';
+import { ToastService } from '../../shared/components/toast/toast.component';
+import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PlayMode } from '../../models/player-state.model';
 
 @Component({
@@ -12,9 +16,14 @@ import { PlayMode } from '../../models/player-state.model';
 })
 export class PlayerBarComponent {
   private readonly playerService = inject(PlayerService);
+  private readonly radioService = inject(RadioService);
+  private readonly settingsService = inject(SettingsService);
+  private readonly toastService = inject(ToastService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   
   // Eventos
   openSettings = output<void>();
+  openRadioSettings = output<void>();
   
   // Estado del reproductor - conectado al PlayerService
   isPlaying = this.playerService.isPlaying;
@@ -24,6 +33,10 @@ export class PlayerBarComponent {
   isLoading = this.playerService.isLoading;
   playMode = this.playerService.playMode;
   isReversed = this.playerService.isReversed;
+  
+  // Estado de Radio
+  radioEnabled = this.radioService.isEnabled;
+  radioGenerating = this.radioService.isGenerating;
   
   // Estado del menú de modo de reproducción
   showPlayModeMenu = signal(false);
@@ -102,6 +115,78 @@ export class PlayerBarComponent {
   
   onOpenSettings(): void {
     this.openSettings.emit();
+  }
+  
+  // ========== Radio Mode Methods ==========
+  
+  async toggleRadioMode(): Promise<void> {
+    // Si ya está activo, desactivar directamente
+    if (this.radioEnabled()) {
+      try {
+        await this.radioService.toggle();
+        this.toastService.info('📻 Modo Radio desactivado');
+      } catch (err) {
+        console.error('Error toggling radio mode:', err);
+      }
+      return;
+    }
+    
+    // Si no está activo, abrir el modal de configuración
+    // El usuario puede activar desde ahí después de configurar
+    this.openRadioSettings.emit();
+  }
+  
+  /**
+   * Activa el modo radio después de validar API keys.
+   * Llamado desde el modal de configuración.
+   */
+  async activateRadioMode(): Promise<boolean> {
+    // Validar API keys
+    try {
+      // 1. Verificar OpenAI API key
+      const hasOpenAI = await this.settingsService.hasApiKey(SettingsService.OPENAI_API_KEY).toPromise();
+      if (!hasOpenAI) {
+        this.toastService.error('Configura tu API key de OpenAI en ⚙️ Ajustes');
+        return false;
+      }
+      
+      // 2. Verificar Replicate API key (para TTS)
+      const hasReplicate = await this.settingsService.hasApiKey(SettingsService.REPLICATE_API_KEY).toPromise();
+      if (!hasReplicate) {
+        this.toastService.error('Configura tu API key de Replicate en ⚙️ Ajustes para el TTS');
+        return false;
+      }
+    } catch {
+      this.toastService.error('Error al verificar API keys');
+      return false;
+    }
+    
+    // Mostrar confirmación
+    const radioName = this.radioService.config()?.radioName || 'Radio Kuicat';
+    const confirmed = await this.confirmDialog.confirm({
+      title: '🎙️ Activar Modo Radio',
+      message: `¿Deseas activar "${radioName}"?\n\nSe generarán anuncios de IA entre canciones. Esto usa las APIs de OpenAI y Replicate (TTS).`,
+      confirmText: 'Activar Radio',
+      cancelText: 'Cancelar'
+    });
+    
+    if (!confirmed) return false;
+    
+    // Activar modo radio
+    try {
+      await this.radioService.toggle();
+      this.toastService.success(`🎙️ ${radioName} está en vivo!`);
+      return true;
+    } catch (err) {
+      console.error('Error activating radio mode:', err);
+      this.toastService.error('Error al activar el modo radio');
+      return false;
+    }
+  }
+  
+  onOpenRadioSettings(event: Event): void {
+    event.stopPropagation();
+    this.openRadioSettings.emit();
   }
   
   // ========== Play Mode Methods ==========

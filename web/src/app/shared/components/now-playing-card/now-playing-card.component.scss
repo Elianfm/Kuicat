@@ -245,6 +245,19 @@
   height: 48px;
   border-radius: $border-radius;
   object-fit: cover;
+  
+  &.radio-cover {
+    animation: radioGlow 2s ease-in-out infinite;
+  }
+}
+
+@keyframes radioGlow {
+  0%, 100% { 
+    box-shadow: 0 0 8px rgba($accent-primary, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 16px rgba($accent-primary, 0.8);
+  }
 }
 
 .card-info {

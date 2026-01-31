@@ -7,16 +7,22 @@
   <video 
     #mediaPlayer
     class="media-player"
-    [class.visible]="isVideo() && currentSong()"
-    [class.audio-only]="!isVideo()"
+    [class.visible]="isVideo() && currentSong() && !isPlayingRadio()"
+    [class.audio-only]="!isVideo() || isPlayingRadio()"
     playsinline
     (click)="togglePlay()"
   ></video>
   
-  <!-- Cover display - solo cuando es audio o no hay canción -->
-  @if (!isVideo() || !currentSong()) {
-    <div class="cover-display" (click)="togglePlay()">
-      <img [src]="coverUrl()" [alt]="songTitle()" class="cover-image">
+  <!-- Cover display - cuando es audio, no hay canción, o hay anuncio de radio -->
+  @if (!isVideo() || !currentSong() || isPlayingRadio()) {
+    <div class="cover-display" [class.radio-mode]="isPlayingRadio()" (click)="togglePlay()">
+      <img [src]="coverUrl()" [alt]="songTitle()" class="cover-image" [class.radio-glow]="isPlayingRadio()">
+      @if (isPlayingRadio()) {
+        <div class="radio-overlay">
+          <span class="material-icons radio-icon">podcasts</span>
+          <span class="radio-text">Radio Kuicat</span>
+        </div>
+      }
     </div>
   }
 </div>

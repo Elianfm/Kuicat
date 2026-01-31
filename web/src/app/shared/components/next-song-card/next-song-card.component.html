@@ -1,10 +1,12 @@
 <div class="next-song-card">
   <!-- Header con label y ranking controls -->
   <div class="card-header">
-    <span class="card-label">
-      <span class="material-icons">skip_next</span>
-      Siguiente
-    </span>
+    <span class="card-label">Siguiente</span>
+    @if (showRadioIndicator()) {
+      <span class="radio-indicator" title="Anuncio de radio antes de esta canción">
+        <span class="material-icons">podcasts</span>
+      </span>
+    }
     
     <!-- Ranking controls -->
     <div class="ranking-controls-wrapper">
@@ -70,10 +72,20 @@
 
   <!-- Contenido -->
   <div class="card-content">
-    <img [src]="cover()" alt="Cover" class="card-cover">
-    <div class="card-info">
-      <span class="card-title">{{ title() }}</span>
-      <span class="card-artist">{{ artist() }}</span>
-    </div>
+    @if (showRadioIndicator()) {
+      <!-- Modo Radio: mostrar cover de radio -->
+      <img src="img/radio-cover.webp" alt="Radio" class="card-cover radio-cover">
+      <div class="card-info">
+        <span class="card-title">📻 Radio Kuicat</span>
+        <span class="card-artist">Anuncio próximo...</span>
+      </div>
+    } @else {
+      <!-- Normal: mostrar siguiente canción -->
+      <img [src]="cover()" alt="Cover" class="card-cover">
+      <div class="card-info">
+        <span class="card-title">{{ title() }}</span>
+        <span class="card-artist">{{ artist() }}</span>
+      </div>
+    }
   </div>
 </div>

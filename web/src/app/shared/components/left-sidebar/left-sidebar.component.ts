@@ -3,9 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../toast/toast.component';
+import { ConfirmDialogService } from '../confirm-dialog/confirm-dialog.component';
 import { PlayerService } from '../../../core/services/player.service';
 import { RankingService } from '../../../core/services/ranking.service';
 import { LibraryService } from '../../../core/services/library.service';
+import { SettingsService } from '../../../core/services/settings.service';
 import { Song } from '../../../models/song.model';
 
 interface SongInfo {
@@ -38,6 +40,8 @@ export class LeftSidebarComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly rankingService = inject(RankingService);
   private readonly libraryService = inject(LibraryService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
+  private readonly settingsService = inject(SettingsService);
   private readonly apiUrl = 'http://localhost:8741/api/songs';
   
   // Todas las canciones de la biblioteca (para calcular stats)
@@ -411,13 +415,37 @@ export class LeftSidebarComponent implements OnInit {
    * Usa IA (OpenAI) para auto-completar la metadata de la canción.
    * Analiza el título/nombre de archivo y sugiere: título, artista, álbum, género, año, descripción.
    */
-  autoFillWithAI(): void {
+  async autoFillWithAI(): Promise<void> {
     const songId = this.songInfo().id;
     if (!songId) {
       this.toastService.error('No hay canción seleccionada');
       return;
     }
     
+    // 1. Verificar API key de OpenAI
+    try {
+      const hasKey = await this.settingsService.hasApiKey(SettingsService.OPENAI_API_KEY).toPromise();
+      if (!hasKey) {
+        this.toastService.error('Configura tu API key de OpenAI en ⚙️ Ajustes');
+        return;
+      }
+    } catch {
+      this.toastService.error('Error al verificar API key');
+      return;
+    }
+    
+    // 2. Mostrar confirmación
+    const songTitle = this.songInfo().title || 'esta canción';
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Auto-fill con IA',
+      message: `¿Deseas usar IA para completar la metadata de "${songTitle}"?\n\nEsto sobrescribirá título, artista, álbum, género, año y descripción.`,
+      confirmText: 'Sí, completar',
+      cancelText: 'Cancelar'
+    });
+    
+    if (!confirmed) return;
+    
+    // 3. Ejecutar auto-fill
     this.autoFillLoading.set(true);
     
     // Llamar al endpoint que obtiene y aplica la metadata de IA

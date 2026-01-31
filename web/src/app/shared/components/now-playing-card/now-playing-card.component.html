@@ -75,11 +75,19 @@
 
   <!-- Contenido principal -->
   <div class="card-content">
-    <img [src]="cover()" alt="Cover" class="card-cover">
-    <div class="card-info">
-      <span class="card-title">{{ title() }}</span>
-      <span class="card-artist">{{ artist() }}</span>
-    </div>
+    @if (isPlayingRadio()) {
+      <img src="img/radio-cover.webp" alt="Radio" class="card-cover radio-cover">
+      <div class="card-info">
+        <span class="card-title">📻 Radio Kuicat</span>
+        <span class="card-artist">Anuncio en curso...</span>
+      </div>
+    } @else {
+      <img [src]="cover()" alt="Cover" class="card-cover">
+      <div class="card-info">
+        <span class="card-title">{{ title() }}</span>
+        <span class="card-artist">{{ artist() }}</span>
+      </div>
+    }
     
     <!-- Botón agregar a playlist -->
     <div class="add-to-playlist">

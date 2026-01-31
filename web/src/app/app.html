@@ -39,6 +39,7 @@
   <app-player-bar 
     class="player-bar-hover" 
     (openSettings)="openConfigModal()"
+    (openRadioSettings)="openRadioConfigModal()"
   />
   
   <!-- Modal de configuración -->
@@ -47,6 +48,12 @@
     [config]="appConfig()"
     (closeModal)="closeConfigModal()"
     (configChange)="onConfigChange($event)"
+  />
+  
+  <!-- Modal de configuración de Radio -->
+  <app-radio-config-modal
+    [isOpen]="radioConfigModalOpen()"
+    (closeModal)="closeRadioConfigModal()"
   />
   
   <!-- Toast notifications -->

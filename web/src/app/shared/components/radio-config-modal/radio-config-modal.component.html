@@ -1,0 +1,277 @@
+<app-modal
+  [isOpen]="isOpen()"
+  title="🎙️ Radio Mode Settings"
+  (closeModal)="onClose()"
+>
+  <div class="radio-config">
+    @if (loading()) {
+      <div class="loading">
+        <span class="material-icons spinning">sync</span>
+        <span>Loading...</span>
+      </div>
+    } @else {
+      <!-- Radio Name -->
+      <div class="form-section">
+        <h3>📻 Radio Station</h3>
+        
+        <div class="form-group">
+          <label for="radioName">Station Name</label>
+          <input 
+            type="text" 
+            id="radioName"
+            [ngModel]="radioName()"
+            (ngModelChange)="radioName.set($event)"
+            placeholder="Radio Kuicat FM"
+            maxlength="50"
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="userName">Your Name (optional)</label>
+          <input 
+            type="text" 
+            id="userName"
+            [ngModel]="userName()"
+            (ngModelChange)="userName.set($event)"
+            placeholder="DJ name for personalized greetings"
+            maxlength="30"
+          >
+          <span class="hint">The DJ will use your name in announcements</span>
+        </div>
+      </div>
+      
+      <!-- Personality -->
+      <div class="form-section">
+        <h3>🎭 DJ Personality</h3>
+        
+        <div class="personality-grid">
+          @for (p of personalities(); track p.id) {
+            <button 
+              class="personality-btn"
+              [class.selected]="personality() === p.id"
+              (click)="personality.set(p.id)"
+            >
+              <span class="name">{{ p.name }}</span>
+              <span class="desc">{{ p.description }}</span>
+            </button>
+          }
+        </div>
+        
+        @if (personality() === 'custom') {
+          <div class="form-group mt-2">
+            <label for="customPersonality">Custom Personality</label>
+            <textarea 
+              id="customPersonality"
+              [ngModel]="customPersonality()"
+              (ngModelChange)="customPersonality.set($event)"
+              placeholder="Describe the DJ personality in detail..."
+              rows="3"
+              maxlength="500"
+            ></textarea>
+          </div>
+        }
+      </div>
+      
+      <!-- Voices -->
+      <div class="form-section">
+        <h3>🎤 Voice Settings</h3>
+        
+        <div class="form-group">
+          <label for="voice1">Primary Voice</label>
+          <select 
+            id="voice1"
+            [ngModel]="voice1()"
+            (ngModelChange)="voice1.set($event)"
+          >
+            <optgroup label="🇺🇸 American Female">
+              @for (v of femaleVoices(); track v.id) {
+                @if (v.accent === 'American') {
+                  <option [value]="v.id">{{ getVoiceLabel(v) }}</option>
+                }
+              }
+            </optgroup>
+            <optgroup label="🇺🇸 American Male">
+              @for (v of maleVoices(); track v.id) {
+                @if (v.accent === 'American') {
+                  <option [value]="v.id">{{ getVoiceLabel(v) }}</option>
+                }
+              }
+            </optgroup>
+            <optgroup label="🇬🇧 British Female">
+              @for (v of femaleVoices(); track v.id) {
+                @if (v.accent === 'British') {
+                  <option [value]="v.id">{{ getVoiceLabel(v) }}</option>
+                }
+              }
+            </optgroup>
+            <optgroup label="🇬🇧 British Male">
+              @for (v of maleVoices(); track v.id) {
+                @if (v.accent === 'British') {
+                  <option [value]="v.id">{{ getVoiceLabel(v) }}</option>
+                }
+              }
+            </optgroup>
+          </select>
+        </div>
+        
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [ngModel]="dualMode()"
+              (ngModelChange)="dualMode.set($event)"
+            >
+            <span>Dual Host Mode (two DJs)</span>
+          </label>
+        </div>
+        
+        @if (dualMode()) {
+          <div class="form-group">
+            <label for="voice2">Secondary Voice</label>
+            <select 
+              id="voice2"
+              [ngModel]="voice2()"
+              (ngModelChange)="voice2.set($event)"
+            >
+              <optgroup label="🇺🇸 American Female">
+                @for (v of femaleVoices(); track v.id) {
+                  @if (v.accent === 'American') {
+                    <option [value]="v.id">{{ getVoiceLabel(v) }}</option>
+                  }
+                }
+              </optgroup>
+              <optgroup label="🇺🇸 American Male">
+                @for (v of maleVoices(); track v.id) {
+                  @if (v.accent === 'American') {
+                    <option [value]="v.id">{{ getVoiceLabel(v) }}</option>
+                  }
+                }
+              </optgroup>
+              <optgroup label="🇬🇧 British Female">
+                @for (v of femaleVoices(); track v.id) {
+                  @if (v.accent === 'British') {
+                    <option [value]="v.id">{{ getVoiceLabel(v) }}</option>
+                  }
+                }
+              </optgroup>
+              <optgroup label="🇬🇧 British Male">
+                @for (v of maleVoices(); track v.id) {
+                  @if (v.accent === 'British') {
+                    <option [value]="v.id">{{ getVoiceLabel(v) }}</option>
+                  }
+                }
+              </optgroup>
+            </select>
+            <span class="hint">Choose a different voice for the second DJ</span>
+          </div>
+          
+          <!-- Secondary Personality -->
+          <div class="form-group">
+            <label>Secondary DJ Personality</label>
+            <div class="personality-grid small">
+              @for (p of personalities(); track p.id) {
+                <button 
+                  class="personality-btn"
+                  [class.selected]="personality2() === p.id"
+                  (click)="personality2.set(p.id)"
+                  type="button"
+                >
+                  <span class="name">{{ p.name }}</span>
+                </button>
+              }
+            </div>
+          </div>
+          
+          @if (personality2() === 'custom') {
+            <div class="form-group">
+              <label for="customPersonality2">Custom Personality for DJ 2</label>
+              <textarea 
+                id="customPersonality2"
+                [ngModel]="customPersonality2()"
+                (ngModelChange)="customPersonality2.set($event)"
+                placeholder="Describe the second DJ's personality..."
+                rows="2"
+                maxlength="500"
+              ></textarea>
+            </div>
+          }
+        }
+      </div>
+      
+      <!-- Frequency -->
+      <div class="form-section">
+        <h3>⏱️ Announcement Frequency</h3>
+        
+        <div class="form-group">
+          <label for="frequency">Announce every {{ frequency() }} songs</label>
+          <input 
+            type="range" 
+            id="frequency"
+            min="2"
+            max="10"
+            [ngModel]="frequency()"
+            (ngModelChange)="frequency.set($event)"
+          >
+          <div class="range-labels">
+            <span>Every 2</span>
+            <span>Every 10</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Effects -->
+      <div class="form-section">
+        <h3>✨ Effects</h3>
+        
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [ngModel]="enableEffects()"
+              (ngModelChange)="enableEffects.set($event)"
+            >
+            <span>Enable smooth transitions (fade in/out)</span>
+          </label>
+        </div>
+      </div>
+      
+      <!-- Actions -->
+      <div class="form-actions">
+        <button class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button 
+          class="btn-primary" 
+          (click)="onSave()"
+          [disabled]="saving()"
+        >
+          @if (saving()) {
+            <span class="material-icons spinning">sync</span>
+            Saving...
+          } @else {
+            Save Settings
+          }
+        </button>
+        @if (!radioEnabled()) {
+          <button 
+            class="btn-activate" 
+            (click)="onSaveAndActivate()"
+            [disabled]="saving() || activating()"
+          >
+            @if (activating()) {
+              <span class="material-icons spinning">sync</span>
+              Activating...
+            } @else {
+              🎙️ Save & Go Live
+            }
+          </button>
+        } @else {
+          <button 
+            class="btn-deactivate" 
+            (click)="onDeactivate()"
+          >
+            ⏹️ Stop Radio
+          </button>
+        }
+      </div>
+    }
+  </div>
+</app-modal>

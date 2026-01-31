@@ -10,6 +10,7 @@ import { NextSongCardComponent } from './shared/components/next-song-card/next-s
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConfigModalComponent, AppConfig } from './shared/components/config-modal/config-modal.component';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
+import { RadioConfigModalComponent } from './shared/components/radio-config-modal/radio-config-modal.component';
 import { PlayerService } from './core/services/player.service';
 import { ThumbnailService } from './core/services/thumbnail.service';
 import { Song } from './models/song.model';
@@ -35,7 +36,8 @@ interface PageResponse<T> {
     NextSongCardComponent,
     ToastComponent,
     ConfigModalComponent,
-    ConfirmDialogComponent
+    ConfirmDialogComponent,
+    RadioConfigModalComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
@@ -60,6 +62,9 @@ export class App implements OnInit {
   
   // Estado del modal de configuración
   configModalOpen = signal(false);
+  
+  // Estado del modal de configuración de radio
+  radioConfigModalOpen = signal(false);
   
   // Configuración de la app
   appConfig = signal<AppConfig>({
@@ -103,6 +108,16 @@ export class App implements OnInit {
   // Cerrar modal de configuración
   closeConfigModal(): void {
     this.configModalOpen.set(false);
+  }
+  
+  // Abrir modal de configuración de radio
+  openRadioConfigModal(): void {
+    this.radioConfigModalOpen.set(true);
+  }
+  
+  // Cerrar modal de configuración de radio
+  closeRadioConfigModal(): void {
+    this.radioConfigModalOpen.set(false);
   }
   
   // Guardar configuración

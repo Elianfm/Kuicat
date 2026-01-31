@@ -297,7 +297,21 @@ Tabla: playlist_songs
 - [x] Integración Spring AI (OpenAI gpt-4o-mini)
 - [x] Configuración segura de API keys (AES-256-GCM, cifrado por PC)
 - [x] Auto-fill de metadata con IA (título, artista, álbum, género, año, descripción)
-- [ ] Modo de reproducción con sugerencias IA (Radio IA)
+- [x] **Modo Radio IA** - Locutor virtual entre canciones:
+  - [x] Configuración de radio (nombre estación, personalidad, voz TTS)
+  - [x] Modal de configuración con personalidades predefinidas (energetic, classic, casual, etc.)
+  - [x] Generación de scripts con GPT-4o-mini
+  - [x] Síntesis de voz con Kokoro TTS (via Replicate API)
+  - [x] Voces múltiples: af_bella, af_sarah, am_adam, am_michael, bf_emma, bm_george, etc.
+  - [x] Modo Dual Host (2 locutores con diálogo alternado)
+  - [x] Pre-generación de anuncios durante reproducción
+  - [x] Transiciones suaves: fadeout → anuncio → música de fondo → fadein
+  - [x] Timing dinámico: música de fondo empieza 15s antes del final del anuncio
+  - [x] Frecuencia configurable (cada X canciones)
+  - [x] Proxy de audio para evitar CORS + amplificación 2.5x (Web Audio API)
+  - [x] Botón anterior reproduce último anuncio (primeros 5s de canción)
+  - [x] Nombre del oyente opcional para saludos personalizados
+  - [x] Prompts mejorados para contenido más interesante (fun facts, trivia, etc.)
 - [ ] Algoritmo de contexto para el LLM
 
 ### Fase 5: Pulido y Distribución

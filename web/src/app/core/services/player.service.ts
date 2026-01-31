@@ -2,6 +2,8 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Song } from '../../models/song.model';
 import { PlayMode } from '../../models/player-state.model';
+import { RadioService } from './radio.service';
+import { RadioContext, RadioAnnouncement } from '../../models/radio.model';
 
 /**
  * Servicio central de reproducción multimedia.
@@ -12,11 +14,24 @@ import { PlayMode } from '../../models/player-state.model';
 })
 export class PlayerService {
   private readonly http = inject(HttpClient);
+  private readonly radioService = inject(RadioService);
   private readonly baseUrl = 'http://localhost:8741/api';
   
   // Elemento multimedia (video funciona para audio y video)
   private mediaElement: HTMLVideoElement | null = null;
   
+  // Elemento de audio para anuncios de radio
+  private radioAudioElement: HTMLAudioElement | null = null;
+  private radioAudioElement2: HTMLAudioElement | null = null; // Para modo dual
+
+  // Cache para pre-generación de anuncios de radio
+  private pendingRadioAnnouncement: RadioAnnouncement | null = null;
+  private lastPlayedAnnouncement: RadioAnnouncement | null = null; // Para botón anterior
+  private isPreGenerating = false;
+  private isFadingOut = false; // Para evitar múltiples fade outs
+  private readonly FADE_OUT_DURATION = 5000; // 5 segundos de fade out (más notable)
+  private readonly BACKGROUND_MUSIC_VOLUME = 0.2; // 20% volumen de música de fondo durante anuncio
+
   // Estado reactivo
   private readonly _currentSong = signal<Song | null>(null);
   private readonly _isPlaying = signal(false);
@@ -30,6 +45,12 @@ export class PlayerService {
   private readonly _activePlaylistId = signal<number | null>(null);
   private readonly _playMode = signal<PlayMode>('sequential');
   private readonly _isReversed = signal(false);
+  
+  // Estado de radio - indica si la siguiente transición tendrá anuncio
+  private readonly _nextTransitionHasAnnouncement = signal(false);
+  
+  // Estado de radio - indica si actualmente se está reproduciendo un anuncio
+  private readonly _isPlayingRadioAnnouncement = signal(false);
   
   // Cola original (para restaurar al desactivar shuffle)
   private originalQueue: Song[] = [];
@@ -47,6 +68,8 @@ export class PlayerService {
   readonly isLoading = this._isLoading.asReadonly();
   readonly activePlaylistId = this._activePlaylistId.asReadonly();
   readonly playMode = this._playMode.asReadonly();
+  readonly nextTransitionHasAnnouncement = this._nextTransitionHasAnnouncement.asReadonly();
+  readonly isPlayingRadioAnnouncement = this._isPlayingRadioAnnouncement.asReadonly();
   readonly isReversed = this._isReversed.asReadonly();
   
   // Computados
@@ -108,6 +131,9 @@ export class PlayerService {
     // Event listeners
     element.addEventListener('timeupdate', () => {
       this._currentTime.set(element.currentTime);
+      
+      // Fade out anticipado si hay anuncio pendiente
+      this.checkForAnticipatedFadeOut();
     });
     
     element.addEventListener('durationchange', () => {
@@ -157,8 +183,14 @@ export class PlayerService {
       return;
     }
     
+    // Reset estados de transición
+    this.isFadingOut = false;
+    
     this._isLoading.set(true);
     this._currentSong.set(song);
+    
+    // Restaurar volumen normal
+    this.mediaElement.volume = this._volume() / 100;
     
     // Determinar si es video
     const format = this.getFormat(song.filePath);
@@ -170,6 +202,10 @@ export class PlayerService {
     
     try {
       await this.mediaElement.play();
+      
+      // Pre-generar anuncio de radio para la siguiente transición
+      this.preGenerateRadioAnnouncement();
+      
     } catch (error) {
       console.error('Error al reproducir:', error);
       this._isLoading.set(false);
@@ -350,12 +386,35 @@ export class PlayerService {
   
   /**
    * Siguiente canción en la queue.
+   * También verifica si toca anuncio de radio.
    */
   async next(): Promise<void> {
     const queue = this._queue();
     const currentIndex = this._queueIndex();
     
     if (currentIndex < queue.length - 1) {
+      // Verificar si hay un anuncio pre-generado listo (skip manual también cuenta)
+      if (this.radioService.isEnabled() && this.pendingRadioAnnouncement) {
+        await this.radioService.checkForAnnouncement().toPromise();
+        await this.playRadioAnnouncementAndTransition();
+        return;
+      }
+      
+      // Verificar si toca anuncio de radio
+      if (this.radioService.isEnabled()) {
+        try {
+          const checkResult = await this.radioService.checkForAnnouncement().toPromise();
+          
+          if (checkResult?.shouldAnnounce) {
+            await this.playRadioAnnouncementAndTransition();
+            return;
+          }
+        } catch (error) {
+          // Silently continue without announcement
+        }
+      }
+      
+      // Sin anuncio, ir directo a siguiente
       const nextIndex = currentIndex + 1;
       this._queueIndex.set(nextIndex);
       await this.playSong(queue[nextIndex]);
@@ -364,8 +423,15 @@ export class PlayerService {
   
   /**
    * Canción anterior en la queue.
+   * Si hay un anuncio reproducido recientemente, lo vuelve a reproducir.
    */
   async previous(): Promise<void> {
+    // Si hay un anuncio reproducido recientemente y estamos en los primeros 5 segundos
+    if (this.lastPlayedAnnouncement?.audioUrl && this._currentTime() < 5) {
+      await this.replayLastAnnouncement();
+      return;
+    }
+    
     const queue = this._queue();
     const currentIndex = this._queueIndex();
     
@@ -381,6 +447,45 @@ export class PlayerService {
       await this.playSong(queue[prevIndex]);
     } else {
       this.seek(0);
+    }
+  }
+  
+  /**
+   * Reproduce el último anuncio de radio que se reprodujo.
+   */
+  private async replayLastAnnouncement(): Promise<void> {
+    if (!this.lastPlayedAnnouncement?.audioUrl) return;
+    
+    // Pausar música actual y hacer fade out rápido
+    if (this.mediaElement) {
+      await this.performQuickFadeOut();
+    }
+    
+    this._isPlayingRadioAnnouncement.set(true);
+    
+    try {
+      const announcement = this.lastPlayedAnnouncement;
+      const isMulti = announcement.audioUrl.startsWith('multi:') || announcement.audioUrl.startsWith('dual:');
+      
+      if (isMulti) {
+        const urls = this.radioService.parseMultiAudioUrl(announcement.audioUrl);
+        if (urls && urls.length > 0) {
+          await this.playMultiRadioAudio(urls);
+        }
+      } else {
+        await this.playRadioAudio(announcement.audioUrl);
+      }
+    } catch {
+      // Silently handle error
+    } finally {
+      this._isPlayingRadioAnnouncement.set(false);
+      
+      // Restaurar volumen
+      if (this.mediaElement) {
+        this.mediaElement.volume = this._volume() / 100;
+        this.mediaElement.play().catch(() => {});
+      }
+      this.resetFadeState();
     }
   }
   
@@ -806,15 +911,623 @@ export class PlayerService {
     return this.mediaElement;
   }
   
-  private onMediaEnded(): void {
-    // Reproducir siguiente automáticamente
-    if (this.hasNext()) {
-      this.next();
-    } else {
+  private async onMediaEnded(): Promise<void> {
+    // Si estamos en medio de un fade con anuncio, ignorar (ya se manejó)
+    if (this.isFadingOut || this._isPlayingRadioAnnouncement()) {
+      return;
+    }
+    
+    // Verificar si hay siguiente canción
+    if (!this.hasNext()) {
       this._isPlaying.set(false);
+      return;
+    }
+    
+    // Verificar si hay un anuncio pre-generado listo (caso raro: canción muy corta)
+    if (this.radioService.isEnabled() && this.pendingRadioAnnouncement) {
+      // Incrementar el contador del backend (el anuncio ya fue generado antes)
+      await this.radioService.checkForAnnouncement().toPromise();
+      await this.playRadioAnnouncementAndTransition();
+      return;
+    }
+    
+    // Verificar si el modo radio está activo y si toca anuncio (fallback si no hay pre-generado)
+    if (this.radioService.isEnabled()) {
+      try {
+        const checkResult = await this.radioService.checkForAnnouncement().toPromise();
+        
+        if (checkResult?.shouldAnnounce) {
+          // Generar y reproducir anuncio de radio
+          await this.playRadioAnnouncementAndTransition();
+          return;
+        }
+      } catch {
+        // Silently continue without announcement
+      }
+    }
+    
+    // Sin anuncio de radio, reproducir siguiente directamente
+    this.next();
+  }
+  
+  /**
+   * Reproduce un anuncio de radio con transiciones de fade.
+   * Flujo: FadeOut música actual -> Silencio -> Anuncio -> Silencio -> FadeIn siguiente canción
+   * Usa el anuncio pre-generado si está disponible, sino genera uno nuevo.
+   */
+  private async playRadioAnnouncementAndTransition(): Promise<void> {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    const currentSong = queue[currentIndex];
+    const nextSong = queue[currentIndex + 1];
+    
+    if (!nextSong) {
+      this.next();
+      return;
+    }
+    
+    try {
+      let announcement: RadioAnnouncement | null = null;
+      
+      // Usar anuncio pre-generado si está disponible
+      if (this.pendingRadioAnnouncement) {
+        announcement = this.pendingRadioAnnouncement;
+        this.pendingRadioAnnouncement = null; // Limpiar cache
+      } else {
+        // Fallback: generar on-demand - hacer fade out mientras generamos
+        
+        // Fade out rápido mientras esperamos generación
+        if (this.mediaElement && !this.isFadingOut) {
+          await this.performQuickFadeOut();
+        }
+        
+        const context: RadioContext = this.buildRadioContext(currentSong, nextSong);
+        announcement = await this.radioService.generateAnnouncement(context).toPromise() ?? null;
+      }
+      
+      if (!announcement?.audioUrl) {
+        this.resetFadeState();
+        this.next();
+        return;
+      }
+      
+      // Guardar para poder reproducir de nuevo con botón anterior
+      this.lastPlayedAnnouncement = announcement;
+      
+      const transition = announcement.transition;
+      
+      // Asegurar que el volumen está en el nivel de fondo (por fade anticipado)
+      // La música sigue sonando bajita durante el anuncio
+      if (this.mediaElement) {
+        this.mediaElement.volume = this.BACKGROUND_MUSIC_VOLUME;
+      }
+      
+      // 1. Pre-silencio antes del anuncio
+      await this.sleep(transition.preSilence);
+      
+      // 2. Marcar que estamos reproduciendo anuncio
+      this._isPlayingRadioAnnouncement.set(true);
+      
+      // 3. Reproducir anuncio (puede ser multi, dual o simple)
+      const isMulti = announcement.audioUrl.startsWith('multi:') || announcement.audioUrl.startsWith('dual:');
+      
+      if (isMulti) {
+        const urls = this.radioService.parseMultiAudioUrl(announcement.audioUrl);
+        if (urls && urls.length > 0) {
+          await this.playMultiRadioAudio(urls);
+        }
+      } else {
+        await this.playRadioAudio(announcement.audioUrl);
+      }
+      
+      // Limpiar flags
+      this._isPlayingRadioAnnouncement.set(false);
+      this._nextTransitionHasAnnouncement.set(false);
+      
+      // 4. Post-silencio: mínimo 5 segundos con música de fondo
+      const postSilenceMs = Math.max(transition.postSilence, 5000);
+      await this.sleep(postSilenceMs);
+      
+      // 5. Avanzar a la siguiente canción
+      this._queueIndex.set(currentIndex + 1);
+      
+      // 6. Fade in de la siguiente canción y resetear estado
+      await this.fadeInAndPlaySong(nextSong, transition.fadeInDuration);
+      this.resetFadeState();
+      
+    } catch (error) {
+      this._isPlayingRadioAnnouncement.set(false);
+      this._nextTransitionHasAnnouncement.set(false);
+      this.resetFadeState();
+      this.next();
     }
   }
   
+  /**
+   * Reproduce un audio de anuncio de radio con amplificación.
+   * Usa Web Audio API para aumentar el volumen de los locutores.
+   */
+  private async playRadioAudio(url: string): Promise<void> {
+    // Convertir URL externa a proxy local
+    const proxyUrl = this.radioService.toProxyUrl(url);
+    
+    try {
+      // Crear contexto de audio
+      const AudioContextClass = globalThis.AudioContext || (globalThis as any).webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      
+      // Descargar audio
+      const response = await fetch(proxyUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Crear source
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      
+      // Crear nodo de ganancia para amplificación
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 2.5; // Amplificar 2.5x
+      
+      // Conectar: source -> gain -> output
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Reproducir y esperar que termine
+      await new Promise<void>((resolve) => {
+        source.onended = () => {
+          audioContext.close();
+          resolve();
+        };
+        source.start(0);
+      });
+      
+    } catch {
+      // Fallback a audio HTML simple
+      this.radioAudioElement ??= document.createElement('audio');
+      
+      const audio = this.radioAudioElement;
+      audio.src = proxyUrl;
+      audio.volume = 1;
+      
+      await new Promise<void>((resolve, reject) => {
+        const handleEnded = () => {
+          audio.removeEventListener('ended', handleEnded);
+          audio.removeEventListener('error', handleError);
+          resolve();
+        };
+        
+        const handleError = () => {
+          audio.removeEventListener('ended', handleEnded);
+          audio.removeEventListener('error', handleError);
+          reject(new Error('Error reproduciendo audio de radio'));
+        };
+        
+        audio.addEventListener('ended', handleEnded);
+        audio.addEventListener('error', handleError);
+        
+        audio.play().catch(reject);
+      });
+    }
+  }
+  
+  /**
+   * Reproduce dos audios de anuncio de radio secuencialmente (modo dual legacy).
+   * @deprecated Usar playMultiRadioAudio para el nuevo formato multi:
+   */
+  private async playDualRadioAudio(url1: string, url2: string): Promise<void> {
+    await this.playMultiRadioAudio([url1, url2]);
+  }
+  
+  /**
+   * Calcula la duración total de múltiples archivos de audio.
+   * Descarga y decodifica cada audio para obtener su duración.
+   */
+  private async calculateTotalAudioDuration(urls: string[]): Promise<number> {
+    let totalDuration = 0;
+    const pauseBetweenLines = 350; // ms entre líneas
+    
+    try {
+      const AudioContextClass = globalThis.AudioContext || (globalThis as any).webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      
+      for (const url of urls) {
+        const proxyUrl = this.radioService.toProxyUrl(url);
+        const response = await fetch(proxyUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0)); // Clone buffer
+        totalDuration += audioBuffer.duration * 1000; // convertir a ms
+      }
+      
+      await audioContext.close();
+      
+      // Añadir pausas entre líneas
+      if (urls.length > 1) {
+        totalDuration += pauseBetweenLines * (urls.length - 1);
+      }
+      
+      return totalDuration;
+      
+    } catch {
+      // Fallback: estimar 8 segundos por audio
+      return urls.length * 8000 + (urls.length > 1 ? pauseBetweenLines * (urls.length - 1) : 0);
+    }
+  }
+  
+  /**
+   * Reproduce múltiples audios de anuncio de radio secuencialmente.
+   * Usado para modo dual con diálogos alternados (3 líneas).
+   */
+  private async playMultiRadioAudio(urls: string[]): Promise<void> {
+    for (let i = 0; i < urls.length; i++) {
+      await this.playRadioAudio(urls[i]);
+      
+      // Pausa entre líneas (excepto después de la última)
+      if (i < urls.length - 1) {
+        await this.sleep(350); // 350ms entre líneas para conversación natural
+      }
+    }
+  }
+  
+  /**
+   * Inicia la reproducción de una canción con fade in.
+   * Comienza desde el volumen de fondo y sube gradualmente.
+   */
+  private async fadeInAndPlaySong(song: Song, duration: number): Promise<void> {
+    const targetVolume = this._volume() / 100;
+    const startVolume = this.BACKGROUND_MUSIC_VOLUME;
+    
+    // Establecer volumen inicial bajo
+    if (this.mediaElement) {
+      this.mediaElement.volume = startVolume;
+    }
+    
+    // Cargar y empezar a reproducir
+    await this.playSong(song);
+    
+    // Fade in gradual desde volumen de fondo hasta volumen objetivo
+    const steps = 25;
+    const stepDuration = duration / steps;
+    const volumeDiff = targetVolume - startVolume;
+    const volumeStep = volumeDiff / steps;
+    
+    for (let i = 1; i <= steps; i++) {
+      await this.sleep(stepDuration);
+      if (this.mediaElement) {
+        this.mediaElement.volume = Math.min(startVolume + (volumeStep * i), targetVolume);
+      }
+    }
+  }
+  
+  /**
+   * Construye el contexto para generar un anuncio de radio.
+   * Incluye info relevante de las canciones (sin datos sensibles).
+   */
+  private buildRadioContext(currentSong: Song | undefined, nextSong: Song): RadioContext {
+    return {
+      // Canción anterior
+      previousTitle: currentSong?.title,
+      previousArtist: currentSong?.artist || 'Unknown',
+      previousAlbum: currentSong?.album,
+      previousGenre: currentSong?.genre,
+      previousYear: currentSong?.year ?? undefined,
+      previousDescription: currentSong?.description || undefined,
+      
+      // Canción siguiente
+      nextTitle: nextSong.title,
+      nextArtist: nextSong.artist || 'Unknown',
+      nextAlbum: nextSong.album,
+      nextGenre: nextSong.genre,
+      nextYear: nextSong.year ?? undefined,
+      nextDescription: nextSong.description || undefined
+    };
+  }
+  
+  /**
+   * Utility para esperar ms.
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
+  /**
+   * Verifica si debe iniciar fade out anticipado antes del final de la canción.
+   * Se ejecuta en cada timeupdate cuando hay un anuncio pendiente.
+   */
+  private checkForAnticipatedFadeOut(): void {
+    // Solo si hay anuncio pendiente y no estamos ya haciendo fade
+    if (!this.pendingRadioAnnouncement || this.isFadingOut) {
+      return;
+    }
+    
+    if (!this.mediaElement) return;
+    
+    const currentTime = this.mediaElement.currentTime;
+    const duration = this.mediaElement.duration;
+    
+    if (!duration || duration <= 0) return;
+    
+    // Calcular segundos restantes
+    const remainingTime = duration - currentTime;
+    const fadeOutSeconds = this.FADE_OUT_DURATION / 1000;
+    
+    // Si quedan menos de X segundos, empezar fade out y transición
+    if (remainingTime <= fadeOutSeconds && remainingTime > 0) {
+      this.isFadingOut = true;
+      // Iniciar fade y luego el anuncio (no esperar a onMediaEnded)
+      this.performFadeOutAndStartAnnouncement();
+    }
+  }
+  
+  /**
+   * Realiza el fade out y luego inicia el anuncio de radio.
+   * El anuncio comienza al terminar el fade, no al terminar la canción.
+   */
+  private async performFadeOutAndStartAnnouncement(): Promise<void> {
+    if (!this.mediaElement) return;
+    
+    const initialVolume = this.mediaElement.volume;
+    const targetVolume = this.BACKGROUND_MUSIC_VOLUME;
+    const volumeDiff = initialVolume - targetVolume;
+    const steps = 25;
+    const stepDuration = this.FADE_OUT_DURATION / steps;
+    const volumeStep = volumeDiff / steps;
+    
+    // Fade out gradual
+    for (let i = 1; i <= steps; i++) {
+      await this.sleep(stepDuration);
+      if (this.mediaElement) {
+        this.mediaElement.volume = Math.max(initialVolume - (volumeStep * i), targetVolume);
+      }
+    }
+    
+    // Asegurar volumen de fondo
+    if (this.mediaElement) {
+      this.mediaElement.volume = targetVolume;
+    }
+    
+    // Pausar canción actual
+    this.mediaElement?.pause();
+    
+    // Incrementar contador en backend
+    await this.radioService.checkForAnnouncement().toPromise();
+    
+    // Iniciar la transición con anuncio
+    await this.playRadioAnnouncementWithNextSongBackground();
+  }
+  
+  /**
+   * Reproduce el anuncio con la SIGUIENTE canción como música de fondo.
+   */
+  private async playRadioAnnouncementWithNextSongBackground(): Promise<void> {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    const currentSong = queue[currentIndex];
+    const nextSong = queue[currentIndex + 1];
+    
+    if (!nextSong || !this.pendingRadioAnnouncement) {
+      this.resetFadeState();
+      this._queueIndex.set(currentIndex + 1);
+      if (nextSong) {
+        await this.playSong(nextSong);
+      }
+      return;
+    }
+    
+    const announcement = this.pendingRadioAnnouncement;
+    this.pendingRadioAnnouncement = null;
+    this.lastPlayedAnnouncement = announcement;
+    
+    try {
+      this._isPlayingRadioAnnouncement.set(true);
+      
+      // 1. Pre-silencio
+      await this.sleep(announcement.transition.preSilence);
+      
+      // 2. Preparar URLs del anuncio
+      const isMulti = announcement.audioUrl.startsWith('multi:') || announcement.audioUrl.startsWith('dual:');
+      const urls = isMulti 
+        ? this.radioService.parseMultiAudioUrl(announcement.audioUrl) 
+        : [announcement.audioUrl];
+      
+      if (!urls || urls.length === 0) {
+        throw new Error('No audio URLs');
+      }
+      
+      // 3. Calcular duración total del anuncio para timing dinámico
+      const totalAnnouncementDuration = await this.calculateTotalAudioDuration(urls);
+      
+      // 4. Calcular cuándo iniciar la música de fondo (15s antes de que termine el anuncio)
+      const BACKGROUND_START_BEFORE_END = 15000; // 15 segundos antes del final
+      const MIN_DELAY = 3000; // Mínimo 3 segundos de anuncio solo
+      const backgroundStartDelay = Math.max(
+        totalAnnouncementDuration - BACKGROUND_START_BEFORE_END,
+        MIN_DELAY
+      );
+      
+      // 5. Iniciar música de fondo después del delay calculado
+      const startBackgroundMusicAfterDelay = async () => {
+        await this.sleep(backgroundStartDelay);
+        if (this.mediaElement && this._isPlayingRadioAnnouncement()) {
+          this._queueIndex.set(currentIndex + 1);
+          this._currentSong.set(nextSong);
+          
+          const streamUrl = `${this.baseUrl}/media/${nextSong.id}/stream`;
+          this.mediaElement.src = streamUrl;
+          this.mediaElement.volume = this.BACKGROUND_MUSIC_VOLUME;
+          await this.mediaElement.play();
+        }
+      };
+      
+      // Lanzar música de fondo en paralelo
+      const backgroundMusicPromise = startBackgroundMusicAfterDelay();
+      
+      // 6. Reproducir el anuncio
+      await this.playMultiRadioAudio(urls);
+      
+      // Esperar a que la música de fondo haya empezado
+      await backgroundMusicPromise;
+      
+      this._isPlayingRadioAnnouncement.set(false);
+      this._nextTransitionHasAnnouncement.set(false);
+      
+      // 7. Fade in de la música a volumen normal
+      await this.fadeInFromBackground(announcement.transition.fadeInDuration);
+      this.resetFadeState();
+      
+    } catch {
+      this._isPlayingRadioAnnouncement.set(false);
+      this._nextTransitionHasAnnouncement.set(false);
+      this.resetFadeState();
+      // Restaurar volumen normal
+      if (this.mediaElement) {
+        this.mediaElement.volume = this._volume() / 100;
+      }
+    }
+  }
+  
+  /**
+   * Fade in desde el volumen de fondo al volumen normal.
+   */
+  private async fadeInFromBackground(duration: number): Promise<void> {
+    if (!this.mediaElement) return;
+    
+    const startVolume = this.BACKGROUND_MUSIC_VOLUME;
+    const targetVolume = this._volume() / 100;
+    const volumeDiff = targetVolume - startVolume;
+    const steps = 25;
+    const stepDuration = duration / steps;
+    const volumeStep = volumeDiff / steps;
+    
+    for (let i = 1; i <= steps; i++) {
+      await this.sleep(stepDuration);
+      if (this.mediaElement) {
+        this.mediaElement.volume = Math.min(startVolume + (volumeStep * i), targetVolume);
+      }
+    }
+  }
+  
+  /**
+   * Realiza el fade out gradual de la música hacia el volumen de fondo.
+   * La música no desaparece completamente, queda muy bajita durante el anuncio.
+   */
+  private async performFadeOut(): Promise<void> {
+    if (!this.mediaElement) return;
+    
+    const initialVolume = this.mediaElement.volume;
+    const targetVolume = this.BACKGROUND_MUSIC_VOLUME;
+    const volumeDiff = initialVolume - targetVolume;
+    const steps = 25; // Más pasos para fade más suave
+    const stepDuration = this.FADE_OUT_DURATION / steps;
+    const volumeStep = volumeDiff / steps;
+    
+    for (let i = 1; i <= steps; i++) {
+      await this.sleep(stepDuration);
+      if (this.mediaElement) {
+        this.mediaElement.volume = Math.max(initialVolume - (volumeStep * i), targetVolume);
+      }
+    }
+    
+    // Asegurar que quede en el volumen de fondo
+    if (this.mediaElement) {
+      this.mediaElement.volume = targetVolume;
+    }
+  }
+  
+  /**
+   * Fade out rápido cuando se genera anuncio on-demand.
+   * Baja al volumen de fondo para música durante el anuncio.
+   */
+  private async performQuickFadeOut(): Promise<void> {
+    if (!this.mediaElement) return;
+    
+    this.isFadingOut = true;
+    const initialVolume = this.mediaElement.volume;
+    const targetVolume = this.BACKGROUND_MUSIC_VOLUME;
+    const volumeDiff = initialVolume - targetVolume;
+    const steps = 10;
+    const stepDuration = 80; // 800ms total
+    const volumeStep = volumeDiff / steps;
+    
+    for (let i = 1; i <= steps; i++) {
+      await this.sleep(stepDuration);
+      if (this.mediaElement) {
+        this.mediaElement.volume = Math.max(initialVolume - (volumeStep * i), targetVolume);
+      }
+    }
+    
+    if (this.mediaElement) {
+      this.mediaElement.volume = targetVolume;
+    }
+  }
+  
+  /**
+   * Resetea el estado de fade.
+   */
+  private resetFadeState(): void {
+    this.isFadingOut = false;
+  }
+  
+  /**
+   * Pre-genera el anuncio de radio para la siguiente transición.
+   * Se ejecuta en background cuando empieza una canción para tener el audio listo.
+   */
+  private async preGenerateRadioAnnouncement(): Promise<void> {
+    // Limpiar cache anterior y resetear flag
+    this.pendingRadioAnnouncement = null;
+    this._nextTransitionHasAnnouncement.set(false);
+    this.resetFadeState();
+    
+    // Verificar si radio está habilitado
+    if (!this.radioService.isEnabled()) {
+      return;
+    }
+    
+    // Evitar múltiples generaciones simultáneas
+    if (this.isPreGenerating) {
+      return;
+    }
+    
+    // Verificar si hay siguiente canción
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    const currentSong = queue[currentIndex];
+    const nextSong = queue[currentIndex + 1];
+    
+    if (!nextSong) {
+      return;
+    }
+    
+    try {
+      // Consultar al backend si toca anuncio (sin incrementar el contador)
+      const checkResult = await this.radioService.peekForAnnouncement().toPromise();
+      
+      if (!checkResult?.shouldAnnounce) {
+        return;
+      }
+      
+      // Marcar que habrá anuncio en la siguiente transición
+      this._nextTransitionHasAnnouncement.set(true);
+      
+      this.isPreGenerating = true;
+      
+      // Construir contexto con info completa
+      const context: RadioContext = this.buildRadioContext(currentSong, nextSong);
+      
+      // Generar el anuncio
+      const announcement = await this.radioService.generateAnnouncement(context).toPromise();
+      
+      if (announcement?.audioUrl) {
+        this.pendingRadioAnnouncement = announcement;
+      }
+      
+    } catch (error) {
+      this._nextTransitionHasAnnouncement.set(false);
+    } finally {
+      this.isPreGenerating = false;
+    }
+  }
+
   private getFormat(filePath: string): string {
     const lastDot = filePath.lastIndexOf('.');
     return lastDot > 0 ? filePath.substring(lastDot + 1).toLowerCase() : '';

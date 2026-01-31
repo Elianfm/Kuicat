@@ -1,10 +1,11 @@
-import { Component, input, output, inject, signal } from '@angular/core';
+import { Component, input, output, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../toast/toast.component';
 import { ConfirmDialogService } from '../confirm-dialog/confirm-dialog.component';
 import { RankingService } from '../../../core/services/ranking.service';
 import { PlayerService } from '../../../core/services/player.service';
 import { ThumbnailService } from '../../../core/services/thumbnail.service';
+import { RadioService } from '../../../core/services/radio.service';
 import { Song } from '../../../models/song.model';
 
 /** Información mínima de canción vecina en ranking */
@@ -29,10 +30,17 @@ export class NextSongCardComponent {
   private readonly rankingService = inject(RankingService);
   private readonly playerService = inject(PlayerService);
   private readonly thumbnailService = inject(ThumbnailService);
+  private readonly radioService = inject(RadioService);
   
   // Señal para forzar re-render cuando se generan thumbnails
   private readonly thumbnailVersion = signal(0);
   private readonly thumbnailCache = new Map<number, string>();
+  
+  // Indicador de anuncio de radio
+  readonly showRadioIndicator = computed(() => 
+    this.radioService.isEnabled() && 
+    this.playerService.nextTransitionHasAnnouncement()
+  );
   
   // Song data
   songId = input<number | null>(null);

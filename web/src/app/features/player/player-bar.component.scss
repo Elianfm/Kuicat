@@ -228,6 +228,74 @@
   }
 }
 
+// Control de Radio Mode
+.radio-control {
+  position: relative;
+}
+
+.radio-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid $border-color;
+  color: $text-muted;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: all $transition-fast;
+  font-size: 12px;
+  font-weight: 600;
+
+  .material-icons {
+    font-size: 18px;
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+
+  &:hover {
+    color: #e74c3c;
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+  }
+  
+  &.active {
+    color: #e74c3c;
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.15);
+    
+    .material-icons {
+      text-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
+    }
+  }
+  
+  &.generating {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  
+  .live-indicator {
+    font-size: 10px;
+    font-weight: 700;
+    color: #e74c3c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 // Control de modo de reproducción
 .play-mode-control {
   position: relative;

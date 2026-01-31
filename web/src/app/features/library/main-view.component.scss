@@ -64,6 +64,11 @@
   &:hover .cover-image {
     transform: scale(1.01);
   }
+  
+  // Modo radio - fondo especial
+  &.radio-mode {
+    background: radial-gradient(ellipse at center, rgba($accent-primary, 0.15) 0%, $bg-primary 70%);
+  }
 }
 
 .cover-image {
@@ -71,6 +76,59 @@
   max-height: 100%;
   object-fit: contain;
   transition: transform 0.2s ease;
+  
+  // Efecto de brillo cuando es radio
+  &.radio-glow {
+    animation: radioGlow 2s ease-in-out infinite;
+    border-radius: 8px;
+  }
+}
+
+@keyframes radioGlow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba($accent-primary, 0.4);
+    filter: brightness(1);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba($accent-primary, 0.7);
+    filter: brightness(1.1);
+  }
+}
+
+// Radio overlay con información
+.radio-overlay {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 32px;
+  background: rgba($bg-primary, 0.85);
+  backdrop-filter: blur(8px);
+  border-radius: 16px;
+  border: 1px solid rgba($accent-primary, 0.3);
+  
+  .radio-icon {
+    font-size: 48px;
+    color: $accent-primary;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  
+  .radio-text {
+    font-family: $font-display;
+    font-size: 1.5rem;
+    color: $text-primary;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 // ===================================

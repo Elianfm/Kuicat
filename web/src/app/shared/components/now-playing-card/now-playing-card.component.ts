@@ -6,6 +6,7 @@ import { RankingService } from '../../../core/services/ranking.service';
 import { PlayerService } from '../../../core/services/player.service';
 import { ThumbnailService } from '../../../core/services/thumbnail.service';
 import { PlaylistService } from '../../../core/services/playlist.service';
+import { RadioService } from '../../../core/services/radio.service';
 import { Song } from '../../../models/song.model';
 import { Playlist } from '../../../models/playlist.model';
 
@@ -33,10 +34,14 @@ export class NowPlayingCardComponent {
   private readonly playerService = inject(PlayerService);
   private readonly thumbnailService = inject(ThumbnailService);
   private readonly playlistService = inject(PlaylistService);
+  private readonly radioService = inject(RadioService);
   
   // Señal para forzar re-render cuando se generan thumbnails
   private readonly thumbnailVersion = signal(0);
   private readonly thumbnailCache = new Map<number, string>();
+  
+  // Computed para detectar si se está reproduciendo anuncio de radio
+  readonly isPlayingRadio = computed(() => this.playerService.isPlayingRadioAnnouncement());
   
   // Song data
   songId = input<number | null>(null);

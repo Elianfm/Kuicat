@@ -26,6 +26,27 @@
     <span class="time">{{ formattedDuration() }}</span>
   </div>
   
+  <!-- Radio Mode -->
+  <div class="radio-control">
+    <button 
+      class="radio-btn" 
+      [class.active]="radioEnabled()"
+      [class.generating]="radioGenerating()"
+      [title]="radioEnabled() ? 'Radio Mode ON - Click to configure' : 'Enable Radio Mode'"
+      (click)="toggleRadioMode()"
+      (contextmenu)="onOpenRadioSettings($event); $event.preventDefault()"
+    >
+      @if (radioGenerating()) {
+        <span class="material-icons spinning">sync</span>
+      } @else {
+        <span class="material-icons">{{ radioEnabled() ? 'radio' : 'radio_button_unchecked' }}</span>
+      }
+      @if (radioEnabled()) {
+        <span class="live-indicator">LIVE</span>
+      }
+    </button>
+  </div>
+  
   <!-- Play Mode -->
   <div class="play-mode-control">
     <button 
