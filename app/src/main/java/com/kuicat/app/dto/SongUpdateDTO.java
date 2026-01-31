@@ -15,6 +15,7 @@ public class SongUpdateDTO {
     private String album;
     private Integer year;
     private String genre;
+    private Integer duration;  // Duración en segundos (para videos sin metadata)
     private String description;
     private String notes;
     private String lyrics;

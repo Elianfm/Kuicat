@@ -108,4 +108,18 @@ export class RankingService {
       })
     );
   }
+  
+  /**
+   * Actualiza una canción localmente sin recargar del servidor.
+   * Útil para actualizaciones parciales como duración.
+   */
+  updateSongLocally(songId: number, updates: Partial<Song>): void {
+    const songs = this._rankedSongs();
+    const index = songs.findIndex(s => s.id === songId);
+    if (index >= 0) {
+      const updatedSongs = [...songs];
+      updatedSongs[index] = { ...updatedSongs[index], ...updates };
+      this._rankedSongs.set(updatedSongs);
+    }
+  }
 }

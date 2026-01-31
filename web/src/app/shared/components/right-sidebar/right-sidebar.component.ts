@@ -10,6 +10,7 @@ import { ThumbnailService } from '../../../core/services/thumbnail.service';
 import { PlaylistService } from '../../../core/services/playlist.service';
 import { LibraryService } from '../../../core/services/library.service';
 import { QuickPlaylistService } from '../../../core/services/quick-playlist.service';
+import { DurationService } from '../../../core/services/duration.service';
 import { PlaylistConfigModalComponent } from '../playlist-config-modal/playlist-config-modal.component';
 import { SongSelectorModalComponent } from '../song-selector-modal/song-selector-modal.component';
 import { Song, QuickPlaylistType } from '../../../models';
@@ -27,10 +28,12 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
   private readonly rankingService = inject(RankingService);
   private readonly thumbnailService = inject(ThumbnailService);
   private readonly libraryService = inject(LibraryService);
+  private readonly durationService = inject(DurationService);
   readonly playlistService = inject(PlaylistService);
   readonly playerService = inject(PlayerService);
   readonly quickPlaylistService = inject(QuickPlaylistService);
   private rankingChangedSub?: Subscription;
+  private durationUpdatedSub?: Subscription;
   
   // Señal para forzar re-render cuando se generan thumbnails
   private readonly thumbnailVersion = signal(0);
@@ -259,19 +262,47 @@ export class RightSidebarComponent implements OnInit, OnDestroy, OnChanges {
     this.rankingChangedSub = this.rankingService.rankingChanged$.subscribe(() => {
       // El estado ya se actualiza en el servicio, no necesitamos hacer nada aquí
     });
+    
+    // Suscribirse a actualizaciones de duración para refrescar la UI
+    this.durationUpdatedSub = this.durationService.durationUpdated$.subscribe(({ id, duration }) => {
+      // Actualizar duración localmente sin recargar todo el ranking
+      this.rankingService.updateSongLocally(id, { duration });
+      
+      // También actualizar en la cola de reproducción
+      const upcoming = this.upcomingSongs();
+      const upcomingSong = upcoming.find(s => s.id === id);
+      if (upcomingSong) {
+        upcomingSong.duration = duration;
+      }
+    });
   }
   
   ngOnDestroy(): void {
     this.rankingChangedSub?.unsubscribe();
+    this.durationUpdatedSub?.unsubscribe();
   }
   
   ngOnChanges(): void {
     if (this.activeView() === 'ranking') {
       this.rankingService.loadRanking();
+      // Encolar canciones del ranking para obtener duraciones faltantes
+      setTimeout(() => {
+        const songs = this.rankedSongs();
+        if (songs.length > 0) {
+          this.durationService.queueSongs(songs);
+        }
+      }, 100);
     }
     // Cargar categorías cuando se abra la vista de playlist
     if (this.activeView() === 'playlist') {
       this.quickPlaylistService.loadCategories();
+    }
+    // Encolar canciones de la cola para obtener duraciones
+    if (this.activeView() === 'queue') {
+      const allQueueSongs = [...this.upcomingSongs(), ...this.previousSongs()];
+      if (allQueueSongs.length > 0) {
+        this.durationService.queueSongs(allQueueSongs);
+      }
     }
   }
   

@@ -50,6 +50,7 @@ public class EntityMapper {
         if (dto.getAlbum() != null) song.setAlbum(dto.getAlbum());
         if (dto.getYear() != null) song.setYear(dto.getYear());
         if (dto.getGenre() != null) song.setGenre(dto.getGenre());
+        if (dto.getDuration() != null) song.setDuration(dto.getDuration());
         if (dto.getDescription() != null) song.setDescription(dto.getDescription());
         if (dto.getNotes() != null) song.setNotes(dto.getNotes());
         if (dto.getLyrics() != null) song.setLyrics(dto.getLyrics());
