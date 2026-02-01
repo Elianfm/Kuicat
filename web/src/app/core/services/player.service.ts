@@ -1080,6 +1080,11 @@ export class PlayerService {
     const currentSong = queue[currentIndex];
     const nextSong = queue[currentIndex + 1];
     
+    console.log('[Radio Transition] idx:', currentIndex, 
+      '| current:', currentSong?.title?.substring(0, 30),
+      '| next:', nextSong?.title?.substring(0, 30),
+      '| hasPending:', !!this.pendingRadioAnnouncement);
+    
     if (!nextSong) {
       this.next();
       return;
@@ -1629,6 +1634,10 @@ export class PlayerService {
     const currentIndex = this._queueIndex();
     const currentSong = queue[currentIndex];
     const nextSong = queue[currentIndex + 1];
+
+    console.log('[Radio PreGen] idx:', currentIndex,
+      '| current:', currentSong?.title?.substring(0, 30),
+      '| next:', nextSong?.title?.substring(0, 30));
 
     if (!nextSong) {
       return;

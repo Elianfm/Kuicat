@@ -140,7 +140,8 @@ public class RadioController {
      */
     @PostMapping("/generate")
     public ResponseEntity<RadioAnnouncementDTO> generateAnnouncement(@RequestBody RadioContextDTO context) {
-        log.info("Generando anuncio de radio...");
+        log.info("Generando anuncio - previous: '{}' | next: '{}'", 
+            context.getPreviousTitle(), context.getNextTitle());
         
         RadioConfigDTO config = radioService.getConfig();
         

@@ -195,7 +195,7 @@ Tabla: playlist_songs
 - [x] `MusicScannerService` actualizado para escanear videos
 - [x] Integración PlayerBar con PlayerService
 - [x] MainView con soporte de video HTML5
-- [ ] **MKV**: Conversión manual con FFmpeg (no soportado nativamente por navegadores)
+- [x] **MKV**: Conversión automática con FFmpeg (script PowerShell recursivo)
 
 ---
 
@@ -307,6 +307,7 @@ Tabla: playlist_songs
   - [x] **userInstructions**: Textarea para guiar narrativa del DJ
   - [x] **Nombres de DJ configurables**: djName1/djName2 (default: nombre de voz)
   - [x] **Ranking en prompts**: Posición en ranking personal de cada canción
+  - [ ] **BUG**: LLM a veces confunde canción anterior/siguiente en los anuncios (habla de la siguiente como si fuera la anterior)
 - [x] **Persistencia de sesión**: Guardar estado al cerrar (canción actual, playlist, posición, config radio)
   - [x] Backend: PlayerState entity + service + controller
   - [x] Backend: Radio memory persisted in RadioConfig (scripts, identity, songs)
@@ -315,7 +316,7 @@ Tabla: playlist_songs
   - [x] sendBeacon al cerrar pestaña para no perder estado
 
 ### Fase 5: Pulido y Distribución
-- [ ] Launcher automático (.bat/.exe)
+- [x] Launcher automático (.bat/.exe) - Kuicat.exe con banner ASCII
 - [ ] Documentación
 - [ ] Preparar para código abierto (README, licencia, contribución)
 
@@ -331,7 +332,7 @@ Tabla: playlist_songs
 
 ## 📋 Decisiones Técnicas Pendientes
 - [x] ¿Qué LLM usar para las sugerencias? → **OpenAI gpt-4o-mini** ($0.15/1M input, $0.60/1M output)
-- [ ] ¿Cada cuántas canciones hacer la llamada al LLM?
+- [x] ¿Cada cuántas canciones hacer la llamada al LLM? → **Configurable en UI** (default: cada 3)
 - [x] ¿Incluir soporte para video musical? → Sí (MP4, M4A ya soportados)
 
 ---

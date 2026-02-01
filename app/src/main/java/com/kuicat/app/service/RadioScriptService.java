@@ -212,13 +212,14 @@ public class RadioScriptService {
             create a creative session identity. Respond with ONLY a JSON object:
             
             {
-              "sessionName": "A creative name for tonight's session (e.g., 'Noches de Rock', 'Viaje Musical')",
-              "sessionVibe": "2-3 words describing the mood (e.g., 'nostálgico y relajante', 'energético y divertido')",
+              "sessionName": "A creative name for tonight's session (e.g., 'Rock Night', 'Musical Journey', 'Midnight Grooves')",
+              "sessionVibe": "2-3 words describing the mood (e.g., 'nostalgic and chill', 'energetic and fun', 'mellow and dreamy')",
               "openingNarrative": "Brief theme for this session - what story will you tell? (1-2 sentences)",
               "djStyle": "How you'll speak tonight (e.g., 'warm and friendly', 'enthusiastic and energetic')"
             }
             
             IMPORTANT: Return ONLY the JSON, no markdown, no extra text.
+
             """);
         
         return sb.toString();
@@ -379,6 +380,8 @@ public class RadioScriptService {
             - Reference a song from the history ("Earlier we heard...")
             - Tease an upcoming song ("Later we have...")
             - Historical context or trivia
+            - Interact with the listener by name! Ask them questions, invite them to sing along,
+              comment on what they might be doing, or share relatable moments
             
             DON'T repeat anything from your MEMORY section!
             
@@ -452,7 +455,7 @@ public class RadioScriptService {
                 
                 === LISTENER ===
                 The listener's name is %s. You can occasionally greet them by name 
-                to make the experience more personal (but don't overdo it).
+                to make the experience more personal
                 """.formatted(config.getUserName()));
         }
         
@@ -529,6 +532,9 @@ public class RadioScriptService {
             - A connection between the songs (genre, era, theme)
             - A joke or witty banter that fits their personalities
             - They can call each other by name naturally
+            - Interact with the listener by name! Talk to them directly, ask questions,
+              invite them to participate, or comment on what they might be feeling
+
             
             DON'T repeat anything from your MEMORY section!
             
@@ -539,7 +545,7 @@ public class RadioScriptService {
             
             RULES:
             1. EXACTLY 3 lines - no more, no less
-            2. Keep each line SHORT (25-50 words max per line)
+            2. Keep each line SHORT (50-100 words max per line)
             3. The dialogue should flow naturally as a conversation
             4. They can banter, joke, or react to each other
             5. NO emojis, NO hashtags
