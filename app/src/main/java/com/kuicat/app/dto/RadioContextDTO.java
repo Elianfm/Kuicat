@@ -1,6 +1,7 @@
 package com.kuicat.app.dto;
 
 import lombok.*;
+import java.util.List;
 
 /**
  * Contexto para generar el script del locutor.
@@ -19,6 +20,7 @@ public class RadioContextDTO {
     private String previousGenre;
     private Integer previousYear;
     private String previousDescription;
+    private Integer previousRankPosition;
     
     // === Canción siguiente ===
     private String nextTitle;
@@ -27,6 +29,14 @@ public class RadioContextDTO {
     private String nextGenre;
     private Integer nextYear;
     private String nextDescription;
+    private Integer nextRankPosition;
+    
+    // === Historial de canciones ===
+    /** Canciones reproducidas anteriormente (formato: "Título - Artista") */
+    private List<String> previousSongs;
+    
+    /** Próximas canciones en cola (formato: "Título - Artista") */
+    private List<String> upcomingSongs;
     
     // === Contexto adicional ===
     private Integer songsPlayedCount;  // Canciones reproducidas en esta sesión

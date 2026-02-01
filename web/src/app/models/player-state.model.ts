@@ -25,3 +25,25 @@ export type PlayMode =
   | 'by-artist'        // Por artista A-Z
   | 'by-genre'         // Por género A-Z
   | 'ai-suggested';    // IA Sugerido (próximamente)
+
+/**
+ * Estado persistido del reproductor (para guardar/restaurar entre sesiones).
+ * Se guarda en BD cada minuto y al cerrar.
+ */
+export interface PersistedPlayerState {
+  // Canción actual
+  currentSongId?: number;
+  queuePosition?: number;  // Posición en segundos
+  volume?: number;         // 0.0 - 1.0
+  isPlaying?: boolean;
+  
+  // Cola de reproducción
+  queueSongIds?: number[];
+  queueIndex?: number;
+  playlistId?: number;     // null = biblioteca
+  
+  // Modos de reproducción
+  shuffleMode?: boolean;
+  repeatMode?: 'none' | 'one' | 'all';
+  rankingFilter?: string;
+}

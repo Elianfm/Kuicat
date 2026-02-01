@@ -14,9 +14,14 @@ export interface RadioConfig {
   personality2?: RadioPersonality;
   customPersonality2?: string;
   
+  // Instrucciones personalizadas del usuario
+  userInstructions?: string;
+  
   // Voces
   voice1: string;
+  djName1?: string;
   voice2?: string;
+  djName2?: string;
   dualMode: boolean;
   
   // Efectos
@@ -67,6 +72,7 @@ export interface RadioContext {
   previousGenre?: string;
   previousYear?: number;
   previousDescription?: string;
+  previousRankPosition?: number;
   
   // Canción siguiente
   nextTitle?: string;
@@ -75,6 +81,11 @@ export interface RadioContext {
   nextGenre?: string;
   nextYear?: number;
   nextDescription?: string;
+  nextRankPosition?: number;
+  
+  // Historial de canciones (formato: "Título - Artista")
+  previousSongs?: string[];
+  upcomingSongs?: string[];
   
   // Contexto de sesión
   songsPlayedCount?: number;

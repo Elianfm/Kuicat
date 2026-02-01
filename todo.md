@@ -209,8 +209,6 @@ Tabla: playlist_songs
 - [x] Cargar metadata estándar desde archivos (JAudioTagger)
 - [x] Detección de archivos duplicados/movidos por hash
 - [x] Actualización incremental de biblioteca
-- [ ] Limpieza automática de archivos eliminados (cleanup)
-- [ ] Progreso del escaneo en tiempo real (websockets)
 
 ### 2. Sistema de Ranking Personal
 - [x] Sistema de ranking personal con posiciones
@@ -228,9 +226,6 @@ Tabla: playlist_songs
   - [x] Frontend: UI integrada en sidebar derecho con buscador
   - [x] Secciones colapsables para Artistas y Géneros
   - [x] Contador de canciones por categoría
-- [ ] Crear playlists permanentes por **género**
-- [ ] Crear playlists permanentes por **artista**
-- [ ] Crear playlists por **etiquetas**
 - [x] Playlists personalizadas (selección manual)
 - [x] Guardar y cargar playlists
 
@@ -243,10 +238,6 @@ Tabla: playlist_songs
   - [x] Solo no rankeadas (modo descubrir)
 - [x] **Ordenar por**: Artista A-Z, Género A-Z
 - [x] **Toggle Invertir orden**: Funciona con cualquier modo
-- [ ] **Modo IA Sugerido**: 
-  - Llamada a LLM cada X canciones
-  - Contexto: últimas canciones, puntuaciones, etiquetas
-  - Sugerencia inteligente de siguiente canción
 
 ### Optimizaciones
 - [x] Thumbnail queue system: Máximo 2 generaciones concurrentes para evitar saturar el navegador
@@ -261,9 +252,9 @@ Tabla: playlist_songs
 - [x] Reproducción real de audio/video (HTML5)
 - [x] Streaming con soporte de seeking (Range requests)
 - [x] PlayerService centralizado en Angular
-- [ ] Carátulas/thumbnails extraídas de los archivos
-- [ ] Lectura de metadata de archivos
-- [ ] API REST para el frontend
+- [x] Carátulas/thumbnails extraídas de los archivos
+- [x] Lectura de metadata de archivos
+- [x] API REST para el frontend
 
 ---
 
@@ -284,8 +275,6 @@ Tabla: playlist_songs
 - [x] Edición de metadata personalizada (año, descripción, notas, lyrics)
 - [x] Estadísticas automáticas de escucha
 - [x] Modelo de datos simplificado (eliminados campos no usados: format, bitrate, sampleRate, albumArtist, trackNumber, discNumber, composer, coverPath)
-- [ ] Sistema de etiquetas personalizables
-- [ ] Búsqueda y filtrado avanzado
 
 ### Fase 3: Playlists y Modos
 - [x] Creación de playlists
@@ -312,7 +301,18 @@ Tabla: playlist_songs
   - [x] Botón anterior reproduce último anuncio (primeros 5s de canción)
   - [x] Nombre del oyente opcional para saludos personalizados
   - [x] Prompts mejorados para contenido más interesante (fun facts, trivia, etc.)
-- [ ] Algoritmo de contexto para el LLM
+  - [x] **Memoria de sesión**: FIFO queue (~4000 chars) de scripts anteriores
+  - [x] **Identidad de sesión**: Generada por LLM (tema, vibe, narrativa, estilo DJ)
+  - [x] **Historial de canciones**: Últimas 10 reproducidas + próximas 10 en cola
+  - [x] **userInstructions**: Textarea para guiar narrativa del DJ
+  - [x] **Nombres de DJ configurables**: djName1/djName2 (default: nombre de voz)
+  - [x] **Ranking en prompts**: Posición en ranking personal de cada canción
+- [x] **Persistencia de sesión**: Guardar estado al cerrar (canción actual, playlist, posición, config radio)
+  - [x] Backend: PlayerState entity + service + controller
+  - [x] Backend: Radio memory persisted in RadioConfig (scripts, identity, songs)
+  - [x] Frontend: PlayerStateService con auto-save cada 60s
+  - [x] Frontend: Restauración de estado al iniciar
+  - [x] sendBeacon al cerrar pestaña para no perder estado
 
 ### Fase 5: Pulido y Distribución
 - [ ] Launcher automático (.bat/.exe)

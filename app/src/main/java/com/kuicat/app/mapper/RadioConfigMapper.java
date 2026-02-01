@@ -21,8 +21,11 @@ public class RadioConfigMapper {
                 .customPersonality(entity.getCustomPersonality())
                 .personality2(entity.getPersonality2())
                 .customPersonality2(entity.getCustomPersonality2())
+                .userInstructions(entity.getUserInstructions())
                 .voice1(entity.getVoice1())
+                .djName1(entity.getDjName1())
                 .voice2(entity.getVoice2())
+                .djName2(entity.getDjName2())
                 .dualMode(entity.getDualMode())
                 .enableJingles(entity.getEnableJingles())
                 .enableEffects(entity.getEnableEffects())
@@ -39,8 +42,11 @@ public class RadioConfigMapper {
         if (dto.getCustomPersonality() != null) entity.setCustomPersonality(dto.getCustomPersonality());
         if (dto.getPersonality2() != null) entity.setPersonality2(dto.getPersonality2());
         if (dto.getCustomPersonality2() != null) entity.setCustomPersonality2(dto.getCustomPersonality2());
+        if (dto.getUserInstructions() != null) entity.setUserInstructions(dto.getUserInstructions());
         if (dto.getVoice1() != null) entity.setVoice1(dto.getVoice1());
+        if (dto.getDjName1() != null) entity.setDjName1(dto.getDjName1());
         if (dto.getVoice2() != null) entity.setVoice2(dto.getVoice2());
+        if (dto.getDjName2() != null) entity.setDjName2(dto.getDjName2());
         if (dto.getDualMode() != null) entity.setDualMode(dto.getDualMode());
         if (dto.getEnableJingles() != null) entity.setEnableJingles(dto.getEnableJingles());
         if (dto.getEnableEffects() != null) entity.setEnableEffects(dto.getEnableEffects());

@@ -36,8 +36,11 @@ export class RadioConfigModalComponent implements OnInit {
   customPersonality = signal('');
   personality2 = signal<string>('casual');
   customPersonality2 = signal('');
+  userInstructions = signal('');
   voice1 = signal('af_bella');
+  djName1 = signal('');
   voice2 = signal('am_michael');
+  djName2 = signal('');
   dualMode = signal(false);
   enableJingles = signal(false);
   enableEffects = signal(true);
@@ -100,8 +103,11 @@ export class RadioConfigModalComponent implements OnInit {
       this.customPersonality.set(config.customPersonality || '');
       this.personality2.set(config.personality2 || 'casual');
       this.customPersonality2.set(config.customPersonality2 || '');
+      this.userInstructions.set(config.userInstructions || '');
       this.voice1.set(config.voice1 || 'af_bella');
+      this.djName1.set(config.djName1 || '');
       this.voice2.set(config.voice2 || 'am_michael');
+      this.djName2.set(config.djName2 || '');
       this.dualMode.set(config.dualMode || false);
       this.enableJingles.set(config.enableJingles || false);
       this.enableEffects.set(config.enableEffects ?? true);
@@ -129,8 +135,11 @@ export class RadioConfigModalComponent implements OnInit {
         customPersonality: this.personality() === 'custom' ? this.customPersonality() : undefined,
         personality2: this.dualMode() ? this.personality2() as any : undefined,
         customPersonality2: this.dualMode() && this.personality2() === 'custom' ? this.customPersonality2() : undefined,
+        userInstructions: this.userInstructions() || undefined,
         voice1: this.voice1(),
+        djName1: this.djName1() || undefined,
         voice2: this.dualMode() ? this.voice2() : undefined,
+        djName2: this.dualMode() ? this.djName2() || undefined : undefined,
         dualMode: this.dualMode(),
         enableJingles: this.enableJingles(),
         enableEffects: this.enableEffects()
@@ -193,8 +202,11 @@ export class RadioConfigModalComponent implements OnInit {
         customPersonality: this.personality() === 'custom' ? this.customPersonality() : undefined,
         personality2: this.dualMode() ? this.personality2() as any : undefined,
         customPersonality2: this.dualMode() && this.personality2() === 'custom' ? this.customPersonality2() : undefined,
+        userInstructions: this.userInstructions() || undefined,
         voice1: this.voice1(),
+        djName1: this.djName1() || undefined,
         voice2: this.dualMode() ? this.voice2() : undefined,
+        djName2: this.dualMode() ? this.djName2() || undefined : undefined,
         dualMode: this.dualMode(),
         enableJingles: this.enableJingles(),
         enableEffects: this.enableEffects()

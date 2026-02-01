@@ -74,6 +74,21 @@ public class SongController {
     }
     
     /**
+     * Obtiene múltiples canciones por IDs.
+     * Útil para restaurar el estado del reproductor.
+     * 
+     * POST /api/songs/by-ids
+     * Body: [1, 2, 3, 4, 5]
+     */
+    @PostMapping("/by-ids")
+    public ResponseEntity<List<SongDTO>> getByIds(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(songService.findByIds(ids));
+    }
+    
+    /**
      * Búsqueda rápida por texto.
      * 
      * GET /api/songs/search?q=bohemian

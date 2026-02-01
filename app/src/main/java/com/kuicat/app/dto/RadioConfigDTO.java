@@ -24,9 +24,14 @@ public class RadioConfigDTO {
     private String personality2;
     private String customPersonality2;
     
+    // === Instrucciones personalizadas ===
+    private String userInstructions;
+    
     // === Voces ===
     private String voice1;
+    private String djName1;
     private String voice2;
+    private String djName2;
     private Boolean dualMode;
     
     // === Efectos ===

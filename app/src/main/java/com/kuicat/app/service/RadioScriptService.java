@@ -1,6 +1,8 @@
 package com.kuicat.app.service;
 
 import com.kuicat.app.dto.RadioContextDTO;
+import com.kuicat.app.dto.RadioMemory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -10,6 +12,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -23,9 +26,45 @@ public class RadioScriptService {
     
     private final SettingsService settingsService;
     private final RadioService radioService;
+    private final ObjectMapper objectMapper;
     
     private static final String OPENAI_API_KEY = "openai_api_key";
     private static final String MODEL = "gpt-4o-mini";
+    
+    /**
+     * Genera la identidad de sesión basándose en las instrucciones del usuario
+     * y las primeras canciones en cola.
+     */
+    public Optional<RadioMemory.RadioIdentity> generateSessionIdentity(List<String> upcomingSongs) {
+        Optional<String> apiKeyOpt = settingsService.getSetting(OPENAI_API_KEY);
+        
+        if (apiKeyOpt.isEmpty() || apiKeyOpt.get().isBlank()) {
+            log.warn("No hay API key de OpenAI configurada para identidad");
+            return Optional.empty();
+        }
+        
+        try {
+            ChatClient chatClient = createChatClient(apiKeyOpt.get(), 0.9);
+            String prompt = buildIdentityPrompt(upcomingSongs);
+            
+            log.debug("Generando identidad de sesión...");
+            
+            String response = chatClient.prompt()
+                .user(prompt)
+                .call()
+                .content();
+            
+            log.debug("Identidad generada: {}", response);
+            
+            // Parsear JSON
+            RadioMemory.RadioIdentity identity = parseIdentityResponse(response);
+            return Optional.ofNullable(identity);
+            
+        } catch (Exception e) {
+            log.error("Error generando identidad: {}", e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
     
     /**
      * Genera el script para un anuncio de radio.
@@ -44,22 +83,7 @@ public class RadioScriptService {
         String apiKey = apiKeyOpt.get();
         
         try {
-            OpenAiApi openAiApi = OpenAiApi.builder()
-                .apiKey(apiKey)
-                .build();
-            
-            OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model(MODEL)
-                .temperature(0.8) // Un poco más creativo para el locutor
-                .build();
-            
-            OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
-                .defaultOptions(options)
-                .build();
-            
-            ChatClient chatClient = ChatClient.create(chatModel);
-            
+            ChatClient chatClient = createChatClient(apiKey, 0.8);
             String prompt = buildPrompt(context);
             
             log.debug("Generando script de radio...");
@@ -70,6 +94,11 @@ public class RadioScriptService {
                 .content();
             
             log.debug("Script generado: {}", script);
+            
+            // Guardar en memoria
+            if (script != null && !script.isBlank()) {
+                radioService.addScriptToMemory(script);
+            }
             
             return Optional.ofNullable(script);
             
@@ -94,22 +123,7 @@ public class RadioScriptService {
         String apiKey = apiKeyOpt.get();
         
         try {
-            OpenAiApi openAiApi = OpenAiApi.builder()
-                .apiKey(apiKey)
-                .build();
-            
-            OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model(MODEL)
-                .temperature(0.85) // Más creativo para diálogos
-                .build();
-            
-            OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
-                .defaultOptions(options)
-                .build();
-            
-            ChatClient chatClient = ChatClient.create(chatModel);
-            
+            ChatClient chatClient = createChatClient(apiKey, 0.85);
             String prompt = buildDualPrompt(context);
             
             log.debug("Generando script dual de radio...");
@@ -121,8 +135,13 @@ public class RadioScriptService {
             
             log.debug("Script dual generado: {}", fullScript);
             
-            // Parsear el script en 2 partes
+            // Parsear el script en partes
             String[] scripts = parseDualScript(fullScript);
+            
+            // Guardar diálogo completo en memoria
+            if (fullScript != null && !fullScript.isBlank()) {
+                radioService.addScriptToMemory(fullScript);
+            }
             
             return Optional.of(scripts);
             
@@ -132,21 +151,147 @@ public class RadioScriptService {
         }
     }
     
-    private String buildPrompt(RadioContextDTO context) {
-        String personality = radioService.getPersonalityDescription();
+    /**
+     * Crea un cliente de chat de OpenAI.
+     */
+    private ChatClient createChatClient(String apiKey, double temperature) {
+        OpenAiApi openAiApi = OpenAiApi.builder()
+            .apiKey(apiKey)
+            .build();
+        
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
+            .model(MODEL)
+            .temperature(temperature)
+            .build();
+        
+        OpenAiChatModel chatModel = OpenAiChatModel.builder()
+            .openAiApi(openAiApi)
+            .defaultOptions(options)
+            .build();
+        
+        return ChatClient.create(chatModel);
+    }
+    
+    /**
+     * Construye el prompt para generar la identidad de sesión.
+     */
+    private String buildIdentityPrompt(List<String> upcomingSongs) {
         var config = radioService.getConfig();
+        String userInstructions = radioService.getUserInstructions();
         String greeting = getTimeBasedGreeting();
         
         StringBuilder sb = new StringBuilder();
         sb.append("""
-            You are a radio DJ for radio station "%s".
+            You are about to start a radio session. Create a unique identity for this session.
+            
+            === STATION INFO ===
+            Station name: %s
+            Time of day: %s
+            """.formatted(config.getRadioName(), greeting));
+        
+        // Instrucciones del usuario
+        if (userInstructions != null && !userInstructions.isBlank()) {
+            sb.append("\n=== USER'S INSTRUCTIONS ===\n");
+            sb.append(userInstructions).append("\n");
+        } else {
+            sb.append("\n(No specific instructions - be creative!)\n");
+        }
+        
+        // Primeras canciones en cola
+        if (upcomingSongs != null && !upcomingSongs.isEmpty()) {
+            sb.append("\n=== FIRST SONGS IN QUEUE ===\n");
+            for (int i = 0; i < Math.min(upcomingSongs.size(), 5); i++) {
+                sb.append("- ").append(upcomingSongs.get(i)).append("\n");
+            }
+        }
+        
+        sb.append("""
+            
+            === YOUR TASK ===
+            Based on the time of day, user instructions, and upcoming songs,
+            create a creative session identity. Respond with ONLY a JSON object:
+            
+            {
+              "sessionName": "A creative name for tonight's session (e.g., 'Noches de Rock', 'Viaje Musical')",
+              "sessionVibe": "2-3 words describing the mood (e.g., 'nostálgico y relajante', 'energético y divertido')",
+              "openingNarrative": "Brief theme for this session - what story will you tell? (1-2 sentences)",
+              "djStyle": "How you'll speak tonight (e.g., 'warm and friendly', 'enthusiastic and energetic')"
+            }
+            
+            IMPORTANT: Return ONLY the JSON, no markdown, no extra text.
+            """);
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Parsea la respuesta JSON de identidad.
+     */
+    private RadioMemory.RadioIdentity parseIdentityResponse(String response) {
+        try {
+            // Limpiar posibles markdown
+            String json = response.trim();
+            if (json.startsWith("```")) {
+                json = json.replaceAll("```json?\\s*", "").replaceAll("```\\s*$", "");
+            }
+            
+            var node = objectMapper.readTree(json);
+            
+            return RadioMemory.RadioIdentity.builder()
+                .sessionName(node.has("sessionName") ? node.get("sessionName").asText() : "Radio Session")
+                .sessionVibe(node.has("sessionVibe") ? node.get("sessionVibe").asText() : "chill and friendly")
+                .openingNarrative(node.has("openingNarrative") ? node.get("openingNarrative").asText() : "")
+                .djStyle(node.has("djStyle") ? node.get("djStyle").asText() : "friendly and casual")
+                .build();
+                
+        } catch (Exception e) {
+            log.error("Error parsing identity JSON: {}", e.getMessage());
+            // Devolver identidad por defecto
+            return RadioMemory.RadioIdentity.builder()
+                .sessionName("Radio Session")
+                .sessionVibe("chill and friendly")
+                .openingNarrative("Let's enjoy some great music together!")
+                .djStyle("friendly and casual")
+                .build();
+        }
+    }
+    
+    private String buildPrompt(RadioContextDTO context) {
+        String personality = radioService.getPersonalityDescription();
+        var config = radioService.getConfig();
+        var memory = radioService.getMemory();
+        String greeting = getTimeBasedGreeting();
+        String djName = radioService.getDjName1();
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("""
+            You are %s, a radio DJ for radio station "%s".
             
             === YOUR PERSONALITY ===
             %s
             """.formatted(
+                djName,
                 config.getRadioName(),
                 personality
             ));
+        
+        // Identidad de sesión (si existe)
+        var identity = memory.getIdentity();
+        if (identity != null) {
+            sb.append("""
+                
+                === SESSION IDENTITY ===
+                Tonight's theme: %s
+                Vibe: %s
+                Narrative: %s
+                Your style tonight: %s
+                """.formatted(
+                    identity.getSessionName(),
+                    identity.getSessionVibe(),
+                    identity.getOpeningNarrative(),
+                    identity.getDjStyle()
+                ));
+        }
         
         // Nombre del oyente (opcional)
         if (config.getUserName() != null && !config.getUserName().isBlank()) {
@@ -158,26 +303,46 @@ public class RadioScriptService {
                 """.formatted(config.getUserName()));
         }
         
-        sb.append("\n=== CONTEXT ===\n");
+        // MEMORIA: Historial de lo dicho
+        if (!memory.isFirstAnnouncement()) {
+            sb.append("\n=== WHAT YOU'VE SAID (MEMORY) ===\n");
+            sb.append("DON'T repeat facts or stories from previous announcements!\n\n");
+            sb.append(memory.getFormattedScriptHistory());
+            sb.append("\n");
+        }
+        
+        // HISTORIAL DE CANCIONES
+        // Canciones anteriores
+        List<String> prevSongs = memory.getPreviousSongsList();
+        if (!prevSongs.isEmpty()) {
+            sb.append("\n=== SONGS WE'VE PLAYED ===\n");
+            for (String song : prevSongs) {
+                sb.append("- ").append(song).append("\n");
+            }
+        }
+        
+        // Próximas canciones (del contexto)
+        if (context.getUpcomingSongs() != null && !context.getUpcomingSongs().isEmpty()) {
+            sb.append("\n=== COMING UP LATER ===\n");
+            for (String song : context.getUpcomingSongs()) {
+                sb.append("- ").append(song).append("\n");
+            }
+        }
+        
+        sb.append("\n=== CURRENT TRANSITION ===\n");
         
         // Canción anterior
         if (context.getPreviousTitle() != null) {
-            sb.append("Song that just played:\n");
+            sb.append("Just finished:\n");
             sb.append("- Title: ").append(context.getPreviousTitle()).append("\n");
             if (context.getPreviousArtist() != null) {
                 sb.append("- Artist: ").append(context.getPreviousArtist()).append("\n");
             }
-            if (context.getPreviousAlbum() != null) {
-                sb.append("- Album: ").append(context.getPreviousAlbum()).append("\n");
-            }
-            if (context.getPreviousGenre() != null) {
-                sb.append("- Genre: ").append(context.getPreviousGenre()).append("\n");
-            }
-            if (context.getPreviousYear() != null) {
-                sb.append("- Year: ").append(context.getPreviousYear()).append("\n");
-            }
             if (context.getPreviousDescription() != null) {
                 sb.append("- Description: ").append(context.getPreviousDescription()).append("\n");
+            }
+            if (context.getPreviousRankPosition() != null) {
+                sb.append("- User Ranking: #").append(context.getPreviousRankPosition()).append(" in their personal chart\n");
             }
         }
         
@@ -185,55 +350,41 @@ public class RadioScriptService {
         
         // Canción siguiente
         if (context.getNextTitle() != null) {
-            sb.append("Coming up next:\n");
+            sb.append("Now playing:\n");
             sb.append("- Title: ").append(context.getNextTitle()).append("\n");
             if (context.getNextArtist() != null) {
                 sb.append("- Artist: ").append(context.getNextArtist()).append("\n");
             }
-            if (context.getNextAlbum() != null) {
-                sb.append("- Album: ").append(context.getNextAlbum()).append("\n");
-            }
-            if (context.getNextGenre() != null) {
-                sb.append("- Genre: ").append(context.getNextGenre()).append("\n");
-            }
-            if (context.getNextYear() != null) {
-                sb.append("- Year: ").append(context.getNextYear()).append("\n");
-            }
             if (context.getNextDescription() != null) {
                 sb.append("- Description: ").append(context.getNextDescription()).append("\n");
             }
-        }
-        
-        // Contexto de sesión
-        if (context.getSongsPlayedCount() != null && context.getSongsPlayedCount() > 0) {
-            sb.append("\nSession info: ").append(context.getSongsPlayedCount())
-              .append(" songs played");
-            if (context.getSessionMinutes() != null) {
-                sb.append(" over ").append(context.getSessionMinutes()).append(" minutes");
+            if (context.getNextRankPosition() != null) {
+                sb.append("- User Ranking: #").append(context.getNextRankPosition()).append(" in their personal chart\n");
             }
-            sb.append(".\n");
         }
         
-        sb.append("\nTime of day hint: ").append(greeting).append("\n");
+        sb.append("\nTime of day: ").append(greeting).append("\n");
+        sb.append("Announcement #").append(memory.getAnnouncementCount() + 1).append(" of this session\n");
         
         sb.append("""
             
             === INSTRUCTIONS ===
             Generate a SHORT radio announcement (30-60 words max).
             
-            MAKE IT INTERESTING by including ONE of these:
-            - A fun fact about the artist (awards, records, collaborations)
-            - Historical context (when/where the song was made, what inspired it)
-            - A personal anecdote or opinion about the song
-            - A connection between the previous and next song (genre, era, theme)
-            - A trivia question for listeners
-            - Mention if it's a classic, a hit, or an underrated gem
+            %s
             
-            DON'T just say "that was X, up next is Y". Add personality and interesting info!
+            MAKE IT INTERESTING by including ONE of these:
+            - A fun fact about the artist or song
+            - A connection to what you've said before (continue the narrative)
+            - Reference a song from the history ("Earlier we heard...")
+            - Tease an upcoming song ("Later we have...")
+            - Historical context or trivia
+            
+            DON'T repeat anything from your MEMORY section!
             
             RULES:
             1. Be NATURAL and CONVERSATIONAL
-            2. Stay in character with your personality
+            2. Stay in character with your personality and tonight's vibe
             3. Keep it SHORT - this will be spoken aloud
             4. NO emojis, NO hashtags, NO special characters
             5. Write in ENGLISH only
@@ -241,7 +392,11 @@ public class RadioScriptService {
             7. Just the announcement text, nothing else
             
             Your announcement:
-            """);
+            """.formatted(
+                memory.isFirstAnnouncement() 
+                    ? "This is your FIRST announcement - introduce the session theme!" 
+                    : "Continue the narrative thread from your previous announcements."
+            ));
         
         return sb.toString();
     }
@@ -250,24 +405,46 @@ public class RadioScriptService {
         String personality1 = radioService.getPersonalityDescription();
         String personality2 = radioService.getPersonality2Description();
         var config = radioService.getConfig();
+        var memory = radioService.getMemory();
         String greeting = getTimeBasedGreeting();
+        String dj1Name = radioService.getDjName1();
+        String dj2Name = radioService.getDjName2();
         
         StringBuilder sb = new StringBuilder();
         sb.append("""
             You are writing a dialogue between TWO radio hosts for radio station "%s".
             
-            === HOST 1 PERSONALITY ===
+            === HOST 1: %s ===
             %s
             
-            === HOST 2 PERSONALITY ===
+            === HOST 2: %s ===
             %s
             
-            HOST1 leads the conversation. HOST2 is the sidekick who adds comments, jokes, and reactions.
+            %s leads the conversation. %s is the sidekick who adds comments, jokes, and reactions.
+            They have great chemistry and banter naturally.
             """.formatted(
                 config.getRadioName(),
+                dj1Name,
                 personality1,
-                personality2
+                dj2Name,
+                personality2,
+                dj1Name,
+                dj2Name
             ));
+        
+        // Identidad de sesión (si existe)
+        var identity = memory.getIdentity();
+        if (identity != null) {
+            sb.append("""
+                
+                === SESSION IDENTITY ===
+                Tonight's theme: %s
+                Vibe: %s
+                """.formatted(
+                    identity.getSessionName(),
+                    identity.getSessionVibe()
+                ));
+        }
         
         // Nombre del oyente (opcional)
         if (config.getUserName() != null && !config.getUserName().isBlank()) {
@@ -279,53 +456,86 @@ public class RadioScriptService {
                 """.formatted(config.getUserName()));
         }
         
-        sb.append("\n=== CONTEXT ===\n");
+        // MEMORIA: Historial de lo dicho
+        if (!memory.isFirstAnnouncement()) {
+            sb.append("\n=== WHAT YOU'VE SAID (MEMORY) ===\n");
+            sb.append("DON'T repeat facts or jokes from previous dialogues!\n\n");
+            sb.append(memory.getFormattedScriptHistory());
+            sb.append("\n");
+        }
         
-        // Misma info de contexto que buildPrompt
-        if (context.getPreviousTitle() != null) {
-            sb.append("Song that just played:\n");
-            sb.append("- Title: ").append(context.getPreviousTitle()).append("\n");
-            if (context.getPreviousArtist() != null) {
-                sb.append("- Artist: ").append(context.getPreviousArtist()).append("\n");
-            }
-            if (context.getPreviousDescription() != null) {
-                sb.append("- Description: ").append(context.getPreviousDescription()).append("\n");
+        // HISTORIAL DE CANCIONES
+        List<String> prevSongs = memory.getPreviousSongsList();
+        if (!prevSongs.isEmpty()) {
+            sb.append("\n=== SONGS WE'VE PLAYED ===\n");
+            for (String song : prevSongs) {
+                sb.append("- ").append(song).append("\n");
             }
         }
         
-        sb.append("\n");
+        if (context.getUpcomingSongs() != null && !context.getUpcomingSongs().isEmpty()) {
+            sb.append("\n=== COMING UP LATER ===\n");
+            for (String song : context.getUpcomingSongs()) {
+                sb.append("- ").append(song).append("\n");
+            }
+        }
+        
+        sb.append("\n=== CURRENT TRANSITION ===\n");
+        
+        if (context.getPreviousTitle() != null) {
+            sb.append("Just finished:\n");
+            sb.append("- ").append(context.getPreviousTitle());
+            if (context.getPreviousArtist() != null) {
+                sb.append(" by ").append(context.getPreviousArtist());
+            }
+            sb.append("\n");
+            if (context.getPreviousDescription() != null) {
+                sb.append("  Description: ").append(context.getPreviousDescription()).append("\n");
+            }
+            if (context.getPreviousRankPosition() != null) {
+                sb.append("  User Ranking: #").append(context.getPreviousRankPosition()).append(" in their personal chart\n");
+            }
+        }
         
         if (context.getNextTitle() != null) {
-            sb.append("Coming up next:\n");
-            sb.append("- Title: ").append(context.getNextTitle()).append("\n");
+            sb.append("Now playing:\n");
+            sb.append("- ").append(context.getNextTitle());
             if (context.getNextArtist() != null) {
-                sb.append("- Artist: ").append(context.getNextArtist()).append("\n");
+                sb.append(" by ").append(context.getNextArtist());
             }
+            sb.append("\n");
             if (context.getNextDescription() != null) {
-                sb.append("- Description: ").append(context.getNextDescription()).append("\n");
+                sb.append("  Description: ").append(context.getNextDescription()).append("\n");
+            }
+            if (context.getNextRankPosition() != null) {
+                sb.append("  User Ranking: #").append(context.getNextRankPosition()).append(" in their personal chart\n");
             }
         }
         
-        sb.append("\nTime of day hint: ").append(greeting).append("\n");
+        sb.append("\nTime of day: ").append(greeting).append("\n");
+        sb.append("Announcement #").append(memory.getAnnouncementCount() + 1).append(" of this session\n");
         
         sb.append("""
             
             === INSTRUCTIONS ===
-            Generate a SHORT dialogue with EXACTLY 3 lines between the two hosts.
+            Generate a SHORT dialogue with EXACTLY 3 lines between %s and %s.
+            
+            %s
             
             MAKE IT INTERESTING! Include at least ONE of these:
-            - A fun fact about the artist (awards, records, collaborations)
-            - Historical context or trivia about the song
+            - A fun fact or trivia about the song/artist
             - A playful debate or opinion about the music
+            - Reference to a song from the history ("Remember earlier when...")
             - A connection between the songs (genre, era, theme)
-            - A joke or witty comment that fits their personalities
+            - A joke or witty banter that fits their personalities
+            - They can call each other by name naturally
             
-            DON'T just say "that was X, up next is Y". Be entertaining!
+            DON'T repeat anything from your MEMORY section!
             
             FORMAT YOUR RESPONSE EXACTLY LIKE THIS (3 lines only):
-            [HOST1] First host opens with something interesting
-            [HOST2] Second host reacts, adds info, or jokes
-            [HOST1] First host wraps up and transitions to next song
+            [HOST1] %s opens with something interesting
+            [HOST2] %s reacts, adds info, or jokes
+            [HOST1] %s wraps up and transitions to next song
             
             RULES:
             1. EXACTLY 3 lines - no more, no less
@@ -338,7 +548,16 @@ public class RadioScriptService {
             8. The last line should transition to the next song
             
             Your dialogue:
-            """);
+            """.formatted(
+                dj1Name,
+                dj2Name,
+                memory.isFirstAnnouncement() 
+                    ? "This is your FIRST dialogue - introduce yourselves by name and the session theme!" 
+                    : "Continue the banter and narrative from your previous dialogues.",
+                dj1Name,
+                dj2Name,
+                dj1Name
+            ));
         
         return sb.toString();
     }

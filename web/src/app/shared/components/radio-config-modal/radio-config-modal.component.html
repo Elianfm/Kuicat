@@ -114,6 +114,19 @@
           </select>
         </div>
         
+        <div class="form-group">
+          <label for="djName1">DJ Name (optional)</label>
+          <input 
+            type="text" 
+            id="djName1"
+            [ngModel]="djName1()"
+            (ngModelChange)="djName1.set($event)"
+            placeholder="Leave empty to use voice name"
+            maxlength="30"
+          >
+          <span class="hint">Custom name for the DJ in announcements</span>
+        </div>
+        
         <div class="form-group checkbox-group">
           <label class="checkbox-label">
             <input 
@@ -165,6 +178,19 @@
             <span class="hint">Choose a different voice for the second DJ</span>
           </div>
           
+          <div class="form-group">
+            <label for="djName2">Secondary DJ Name (optional)</label>
+            <input 
+              type="text" 
+              id="djName2"
+              [ngModel]="djName2()"
+              (ngModelChange)="djName2.set($event)"
+              placeholder="Leave empty to use voice name"
+              maxlength="30"
+            >
+            <span class="hint">Custom name for the second DJ</span>
+          </div>
+          
           <!-- Secondary Personality -->
           <div class="form-group">
             <label>Secondary DJ Personality</label>
@@ -196,6 +222,24 @@
             </div>
           }
         }
+      </div>
+      
+      <!-- User Instructions -->
+      <div class="form-section">
+        <h3>📝 Session Instructions (Optional)</h3>
+        
+        <div class="form-group">
+          <label for="userInstructions">Tell the DJ how to run tonight's session</label>
+          <textarea 
+            id="userInstructions"
+            [ngModel]="userInstructions()"
+            (ngModelChange)="userInstructions.set($event)"
+            placeholder="e.g., 'Tonight is a chill late-night session. Be relaxed and nostalgic. Focus on the 80s rock theme. Occasionally joke about old hair bands...'"
+            rows="4"
+            maxlength="1000"
+          ></textarea>
+          <span class="hint">Leave empty to let the DJ create their own narrative based on your music</span>
+        </div>
       </div>
       
       <!-- Frequency -->

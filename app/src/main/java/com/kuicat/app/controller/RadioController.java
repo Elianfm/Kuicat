@@ -64,6 +64,17 @@ public class RadioController {
     }
     
     /**
+     * Resetea la memoria de la sesión de radio.
+     * Útil si el usuario quiere empezar una nueva narrativa sin desactivar/activar.
+     */
+    @PostMapping("/reset-memory")
+    public ResponseEntity<Map<String, String>> resetMemory() {
+        radioService.resetMemory();
+        log.info("Memoria de radio reseteada manualmente");
+        return ResponseEntity.ok(Map.of("status", "ok", "message", "Memory reset successfully"));
+    }
+    
+    /**
      * Obtiene las voces disponibles para TTS.
      */
     @GetMapping("/voices")
@@ -136,6 +147,18 @@ public class RadioController {
         if (!Boolean.TRUE.equals(config.getEnabled())) {
             log.warn("Radio mode no está activo");
             return ResponseEntity.badRequest().build();
+        }
+        
+        // Registrar canción anterior en el historial
+        if (context.getPreviousTitle() != null) {
+            radioService.addSongToHistory(context.getPreviousTitle(), context.getPreviousArtist());
+        }
+        
+        // Generar identidad de sesión si es necesario
+        if (radioService.needsIdentityGeneration()) {
+            log.info("Generando identidad de sesión...");
+            var identityOpt = radioScriptService.generateSessionIdentity(context.getUpcomingSongs());
+            identityOpt.ifPresent(radioService::setSessionIdentity);
         }
         
         boolean isDualMode = radioService.isDualMode();

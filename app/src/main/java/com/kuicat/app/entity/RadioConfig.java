@@ -63,14 +63,28 @@ public class RadioConfig {
     @Builder.Default
     private String voice1 = "af_bella";
     
+    /** Nombre del DJ 1 (opcional, por defecto usa el nombre de la voz) */
+    @Column(name = "dj_name1", length = 50)
+    private String djName1;
+    
     /** Voz secundaria para modo dúo (opcional) */
     @Column(name = "voice2", length = 30)
     private String voice2;
+    
+    /** Nombre del DJ 2 (opcional, por defecto usa el nombre de la voz) */
+    @Column(name = "dj_name2", length = 50)
+    private String djName2;
     
     /** ¿Modo dúo activado? (2 locutores) */
     @Column(name = "dual_mode")
     @Builder.Default
     private Boolean dualMode = false;
+    
+    // === Instrucciones personalizadas ===
+    
+    /** Instrucciones del usuario para la narrativa/estilo del DJ (opcional) */
+    @Column(name = "user_instructions", length = 1000)
+    private String userInstructions;
     
     // === Efectos ===
     
@@ -95,6 +109,25 @@ public class RadioConfig {
     @Column(name = "song_counter")
     @Builder.Default
     private Integer songCounter = 0;
+    
+    // === Memoria de sesión (persistida) ===
+    
+    /** Historial de scripts del DJ (JSON array) */
+    @Column(name = "script_history", columnDefinition = "TEXT")
+    private String scriptHistory;
+    
+    /** Historial de canciones reproducidas (JSON array) */
+    @Column(name = "previous_songs", columnDefinition = "TEXT")
+    private String previousSongs;
+    
+    /** Identidad de sesión (JSON object) */
+    @Column(name = "session_identity", columnDefinition = "TEXT")
+    private String sessionIdentity;
+    
+    /** Contador de anuncios en la sesión */
+    @Column(name = "announcement_count")
+    @Builder.Default
+    private Integer announcementCount = 0;
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

@@ -1,8 +1,9 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Song } from '../../models/song.model';
-import { PlayMode } from '../../models/player-state.model';
+import { PlayMode, PersistedPlayerState } from '../../models/player-state.model';
 import { RadioService } from './radio.service';
+import { PlayerStateService } from './player-state.service';
 import { RadioContext, RadioAnnouncement } from '../../models/radio.model';
 
 /**
@@ -15,6 +16,7 @@ import { RadioContext, RadioAnnouncement } from '../../models/radio.model';
 export class PlayerService {
   private readonly http = inject(HttpClient);
   private readonly radioService = inject(RadioService);
+  private readonly playerStateService = inject(PlayerStateService);
   private readonly baseUrl = 'http://localhost:8741/api';
   
   // Elemento multimedia (video funciona para audio y video)
@@ -172,6 +174,123 @@ export class PlayerService {
     
     // Aplicar volumen inicial
     element.volume = this._volume() / 100;
+    
+    // Iniciar auto-guardado de estado
+    this.playerStateService.startAutoSave(() => this.getPersistedState());
+    
+    // Intentar restaurar estado anterior
+    this.restoreState();
+  }
+  
+  /**
+   * Obtiene el estado actual para persistir.
+   */
+  private getPersistedState(): PersistedPlayerState {
+    return {
+      currentSongId: this._currentSong()?.id,
+      queuePosition: this._currentTime(),
+      volume: this._volume() / 100,
+      isPlaying: this._isPlaying(),
+      queueSongIds: this._queue().map(s => s.id),
+      queueIndex: this._queueIndex(),
+      playlistId: this._activePlaylistId() ?? undefined,
+      shuffleMode: this._playMode() === 'shuffle',
+      repeatMode: 'none', // TODO: si agregamos repeat mode
+      rankingFilter: this.getRankingFilterFromPlayMode(this._playMode())
+    };
+  }
+  
+  /**
+   * Convierte PlayMode a rankingFilter string.
+   */
+  private getRankingFilterFromPlayMode(mode: PlayMode): string | undefined {
+    if (mode.startsWith('top-')) {
+      return mode;
+    }
+    if (mode === 'by-ranking') {
+      return 'all-ranked';
+    }
+    if (mode === 'unranked') {
+      return 'unranked';
+    }
+    return undefined;
+  }
+  
+  /**
+   * Restaura el estado del reproductor desde la BD.
+   */
+  private async restoreState(): Promise<void> {
+    try {
+      const state = await this.playerStateService.getState();
+      
+      // Solo restaurar si hay algo guardado
+      if (!state.currentSongId && (!state.queueSongIds || state.queueSongIds.length === 0)) {
+        return;
+      }
+      
+      // Restaurar volumen
+      if (state.volume !== undefined) {
+        this._volume.set(Math.round(state.volume * 100));
+        if (this.mediaElement) {
+          this.mediaElement.volume = state.volume;
+        }
+      }
+      
+      // Restaurar cola si hay
+      if (state.queueSongIds && state.queueSongIds.length > 0) {
+        // Cargar las canciones de la cola desde el servidor
+        const songsResponse = await fetch(`${this.baseUrl}/songs/by-ids`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(state.queueSongIds)
+        });
+        
+        if (songsResponse.ok) {
+          const songs: Song[] = await songsResponse.json();
+          
+          // Ordenar según el orden guardado
+          const songMap = new Map(songs.map(s => [s.id, s]));
+          const orderedQueue = state.queueSongIds
+            .map(id => songMap.get(id))
+            .filter((s): s is Song => s !== undefined);
+          
+          if (orderedQueue.length > 0) {
+            this._queue.set(orderedQueue);
+            this._queueIndex.set(state.queueIndex || 0);
+            this._activePlaylistId.set(state.playlistId ?? null);
+            
+            // Establecer canción actual
+            const currentSong = orderedQueue[state.queueIndex || 0];
+            if (currentSong) {
+              this._currentSong.set(currentSong);
+              
+              // Determinar si es video
+              const format = this.getFormat(currentSong.filePath);
+              this._isVideo.set(this.VIDEO_FORMATS.has(format));
+              
+              // Cargar la canción pero no reproducir automáticamente
+              if (this.mediaElement) {
+                const streamUrl = `${this.baseUrl}/media/${currentSong.id}/stream`;
+                this.mediaElement.src = streamUrl;
+                
+                // Restaurar posición cuando los metadatos se carguen
+                const position = state.queuePosition || 0;
+                if (position > 0) {
+                  this.mediaElement.addEventListener('loadedmetadata', () => {
+                    if (this.mediaElement && position < this.mediaElement.duration) {
+                      this.mediaElement.currentTime = position;
+                    }
+                  }, { once: true });
+                }
+              }
+            }
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('[PlayerService] Error restoring state:', error);
+    }
   }
   
   /**
@@ -1204,6 +1323,18 @@ export class PlayerService {
    * Incluye info relevante de las canciones (sin datos sensibles).
    */
   private buildRadioContext(currentSong: Song | undefined, nextSong: Song): RadioContext {
+    const queue = this._queue();
+    const currentIndex = this._queueIndex();
+    
+    // Obtener las próximas 10 canciones (excluyendo la actual y la siguiente)
+    const upcomingSongs: string[] = [];
+    for (let i = currentIndex + 2; i < Math.min(currentIndex + 12, queue.length); i++) {
+      const song = queue[i];
+      if (song) {
+        upcomingSongs.push(`${song.title} - ${song.artist || 'Unknown'}`);
+      }
+    }
+    
     return {
       // Canción anterior
       previousTitle: currentSong?.title,
@@ -1212,6 +1343,7 @@ export class PlayerService {
       previousGenre: currentSong?.genre,
       previousYear: currentSong?.year ?? undefined,
       previousDescription: currentSong?.description || undefined,
+      previousRankPosition: currentSong?.rankPosition ?? undefined,
       
       // Canción siguiente
       nextTitle: nextSong.title,
@@ -1219,7 +1351,11 @@ export class PlayerService {
       nextAlbum: nextSong.album,
       nextGenre: nextSong.genre,
       nextYear: nextSong.year ?? undefined,
-      nextDescription: nextSong.description || undefined
+      nextDescription: nextSong.description || undefined,
+      nextRankPosition: nextSong.rankPosition ?? undefined,
+      
+      // Historial de canciones (el backend guarda las anteriores, solo enviamos las próximas)
+      upcomingSongs: upcomingSongs.length > 0 ? upcomingSongs : undefined
     };
   }
   
@@ -1493,7 +1629,7 @@ export class PlayerService {
     const currentIndex = this._queueIndex();
     const currentSong = queue[currentIndex];
     const nextSong = queue[currentIndex + 1];
-    
+
     if (!nextSong) {
       return;
     }

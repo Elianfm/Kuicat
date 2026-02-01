@@ -50,6 +50,22 @@ public class SongService {
     }
     
     /**
+     * Obtiene múltiples canciones por IDs.
+     */
+    public List<SongDTO> findByIds(List<Long> ids) {
+        List<Song> songs = songRepository.findAllById(ids);
+        return songs.stream()
+            .map(song -> {
+                SongDTO dto = mapper.toSongDTO(song);
+                if (song.getRanking() != null) {
+                    dto.setRankPosition(rankingService.calculatePosition(song.getRanking()));
+                }
+                return dto;
+            })
+            .toList();
+    }
+    
+    /**
      * Obtiene todas las canciones con paginación, filtros y ordenamiento.
      */
     public PageResponse<SongDTO> findAll(SongFilterCriteria filter, int page, int size, String sortBy, String sortDir) {
