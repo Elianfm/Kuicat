@@ -6,6 +6,7 @@ import { ToastService } from '../toast/toast.component';
 import { ConfirmDialogService } from '../confirm-dialog/confirm-dialog.component';
 import { RadioService } from '../../../core/services/radio.service';
 import { SettingsService } from '../../../core/services/settings.service';
+import { PlayerService } from '../../../core/services/player.service';
 import { RadioConfig, RadioVoice, RadioPersonalityPreset } from '../../../models';
 
 @Component({
@@ -19,6 +20,7 @@ export class RadioConfigModalComponent implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly radioService = inject(RadioService);
   private readonly settingsService = inject(SettingsService);
+  private readonly playerService = inject(PlayerService);
   private readonly confirmDialog = inject(ConfirmDialogService);
   
   // Inputs
@@ -217,6 +219,11 @@ export class RadioConfigModalComponent implements OnInit {
       
       this.toastService.success(`🎙️ ${radioName} está en vivo!`);
       this.closeModal.emit();
+      
+      // Pre-generar anuncio en background (después de cerrar modal)
+      await new Promise(resolve => setTimeout(resolve, 100));
+      this.playerService.triggerRadioPreGeneration(); // Sin await para no bloquear
+      
     } catch (err) {
       console.error('Error activating radio:', err);
       this.toastService.error('Error al activar el modo radio');

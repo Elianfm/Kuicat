@@ -307,7 +307,14 @@ Tabla: playlist_songs
   - [x] **userInstructions**: Textarea para guiar narrativa del DJ
   - [x] **Nombres de DJ configurables**: djName1/djName2 (default: nombre de voz)
   - [x] **Ranking en prompts**: Posición en ranking personal de cada canción
-  - [ ] **BUG**: LLM a veces confunde canción anterior/siguiente en los anuncios (habla de la siguiente como si fuera la anterior)
+  - [x] **BUG RESUELTO**: Índice de canción corregido - anuncios ahora hablan de la canción correcta
+  - [x] **Prompt mejorado**: "Coming up next" en vez de "Now playing" para claridad
+  - [x] **Hora exacta en prompts**: Muestra HH:mm en vez de "Morning/Afternoon"
+  - [x] **Anti-repetición reforzada**: Instrucciones CRITICAL para evitar repetir contenido
+  - [x] **Primer anuncio inmediato**: La radio habla desde la primera canción
+  - [x] **Pre-generación desde modal**: Trigger automático al activar radio
+  - [x] **Stage directions prohibidas**: El LLM no genera asteriscos para acciones
+- [x] **Descripción AI mejorada**: Prompt simplificado sin límite de caracteres, pide curiosidades/historia
 - [x] **Persistencia de sesión**: Guardar estado al cerrar (canción actual, playlist, posición, config radio)
   - [x] Backend: PlayerState entity + service + controller
   - [x] Backend: Radio memory persisted in RadioConfig (scripts, identity, songs)
@@ -317,6 +324,7 @@ Tabla: playlist_songs
 
 ### Fase 5: Pulido y Distribución
 - [x] Launcher automático (.bat/.exe) - Kuicat.exe con banner ASCII
+- [x] Launcher mejorado: Backend/Frontend en paralelo, procesos ocultos, auto-cierre al cerrar launcher
 - [ ] Documentación
 - [ ] Preparar para código abierto (README, licencia, contribución)
 

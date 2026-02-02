@@ -170,49 +170,67 @@ if (Test-Port $FrontendPort) {
     $frontendAlreadyRunning = $false
 }
 
-# Iniciar Backend
+# Iniciar Backend y Frontend en paralelo
+Write-Step "2/4" "Iniciando servicios..."
+
 if (-not $backendAlreadyRunning) {
-    Write-Step "2/5" "Iniciando Backend (Spring Boot)..."
-    
     $appDir = Join-Path $RootDir "app"
     $backendProcess = Start-Process -FilePath "cmd.exe" `
         -ArgumentList "/c", "cd /d `"$appDir`" && mvnw.cmd spring-boot:run" `
-        -WindowStyle Minimized `
+        -WindowStyle Hidden `
         -PassThru
-    
-    Write-Step "3/5" "Esperando Backend en puerto $BackendPort..."
-    if (-not (Wait-ForPort $BackendPort "Backend")) {
-        exit 1
-    }
-    Write-Success "Backend listo! (PID: $($backendProcess.Id))"
-} else {
-    Write-Step "2/5" "Backend ya corriendo - saltando"
-    Write-Step "3/5" "Backend ya corriendo - saltando"
+    Write-Host "      Backend iniciando... (PID: $($backendProcess.Id))" -ForegroundColor Gray
 }
 
-# Iniciar Frontend
 if (-not $frontendAlreadyRunning) {
-    Write-Step "4/5" "Iniciando Frontend (Angular)..."
-    
     $webDir = Join-Path $RootDir "web"
     $frontendProcess = Start-Process -FilePath "cmd.exe" `
         -ArgumentList "/c", "cd /d `"$webDir`" && npm start" `
-        -WindowStyle Minimized `
+        -WindowStyle Hidden `
         -PassThru
-    
-    Write-Host "      Esperando Frontend en puerto $FrontendPort..." -NoNewline
-    if (-not (Wait-ForPort $FrontendPort "Frontend")) {
-        exit 1
-    }
-    Write-Host ""
-    Write-Success "Frontend listo! (PID: $($frontendProcess.Id))"
-} else {
-    Write-Step "4/5" "Frontend ya corriendo - saltando"
+    Write-Host "      Frontend iniciando... (PID: $($frontendProcess.Id))" -ForegroundColor Gray
 }
+
+# Esperar ambos puertos
+Write-Step "3/4" "Esperando servicios..."
+
+$waitingForBackend = -not $backendAlreadyRunning
+$waitingForFrontend = -not $frontendAlreadyRunning
+$elapsed = 0
+$timeout = 120
+
+Write-Host "      " -NoNewline
+while (($waitingForBackend -or $waitingForFrontend) -and $elapsed -lt $timeout) {
+    if ($waitingForBackend -and (Test-Port $BackendPort)) {
+        Write-Host "B" -NoNewline -ForegroundColor Green
+        $waitingForBackend = $false
+    }
+    if ($waitingForFrontend -and (Test-Port $FrontendPort)) {
+        Write-Host "F" -NoNewline -ForegroundColor Green
+        $waitingForFrontend = $false
+    }
+    if ($waitingForBackend -or $waitingForFrontend) {
+        Write-Host "." -NoNewline -ForegroundColor DarkGray
+        Start-Sleep -Seconds 2
+        $elapsed += 2
+    }
+}
+Write-Host ""
+
+if ($waitingForBackend) {
+    Write-Error "Backend no respondió después de $timeout segundos"
+    exit 1
+}
+if ($waitingForFrontend) {
+    Write-Error "Frontend no respondió después de $timeout segundos"
+    exit 1
+}
+
+Write-Success "Todos los servicios listos!"
 
 # Abrir navegador
 if (-not $NoBrowser) {
-    Write-Step "5/5" "Abriendo navegador..."
+    Write-Step "4/4" "Abriendo navegador..."
     Start-Process $BrowserUrl
 }
 
@@ -222,8 +240,66 @@ Write-Host "  ¡Kuicat está corriendo!" -ForegroundColor Green
 Write-Host "  URL: $BrowserUrl" -ForegroundColor Cyan
 Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Para cerrar: Cierra las ventanas minimizadas del backend/frontend" -ForegroundColor DarkGray
-Write-Host "               o usa Ctrl+C en ellas." -ForegroundColor DarkGray
+Write-Host "  Presiona Enter para CERRAR Kuicat y detener todos los servicios." -ForegroundColor Yellow
 Write-Host ""
 
-Read-Host "Presiona Enter para cerrar este launcher (los servicios seguirán corriendo)"
+Read-Host "Presiona Enter para cerrar Kuicat"
+
+# Función para matar proceso y sus hijos
+function Stop-ProcessTree {
+    param([int]$ProcessId)
+    try {
+        # Obtener procesos hijos
+        $children = Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $ProcessId }
+        foreach ($child in $children) {
+            Stop-ProcessTree -ProcessId $child.ProcessId
+        }
+        # Matar el proceso padre
+        Stop-Process -Id $ProcessId -Force -ErrorAction SilentlyContinue
+    } catch {
+        # Ignorar errores si el proceso ya no existe
+    }
+}
+
+Write-Host ""
+Write-Step "X" "Cerrando servicios..."
+
+# Matar los procesos que iniciamos
+if ($backendProcess -and -not $backendAlreadyRunning) {
+    Write-Host "      Cerrando Backend (PID: $($backendProcess.Id))..." -ForegroundColor Gray
+    Stop-ProcessTree -ProcessId $backendProcess.Id
+}
+
+if ($frontendProcess -and -not $frontendAlreadyRunning) {
+    Write-Host "      Cerrando Frontend (PID: $($frontendProcess.Id))..." -ForegroundColor Gray
+    Stop-ProcessTree -ProcessId $frontendProcess.Id
+}
+
+# También matar procesos Java/Node que estén usando los puertos
+# (por si se escapó alguno)
+try {
+    # Buscar procesos en el puerto del backend
+    $backendConn = Get-NetTCPConnection -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+    if ($backendConn) {
+        $backendConn | ForEach-Object {
+            $pid = $_.OwningProcess
+            Write-Host "      Matando proceso en puerto $BackendPort (PID: $pid)..." -ForegroundColor Gray
+            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    # Buscar procesos en el puerto del frontend
+    $frontendConn = Get-NetTCPConnection -LocalPort $FrontendPort -State Listen -ErrorAction SilentlyContinue
+    if ($frontendConn) {
+        $frontendConn | ForEach-Object {
+            $pid = $_.OwningProcess
+            Write-Host "      Matando proceso en puerto $FrontendPort (PID: $pid)..." -ForegroundColor Gray
+            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+        }
+    }
+} catch {
+    # Ignorar errores
+}
+
+Write-Success "¡Kuicat cerrado!"
+Start-Sleep -Seconds 1

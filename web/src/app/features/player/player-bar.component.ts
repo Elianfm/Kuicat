@@ -176,6 +176,15 @@ export class PlayerBarComponent {
     try {
       await this.radioService.toggle();
       this.toastService.success(`🎙️ ${radioName} está en vivo!`);
+      
+      // Pequeño delay para asegurar que el estado se propague
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Pre-generar anuncio inmediatamente para que la card "next" lo muestre
+      console.log('[Radio] Forzando pre-generación de anuncio inicial...');
+      await this.playerService.triggerRadioPreGeneration();
+      console.log('[Radio] Pre-generación completada');
+      
       return true;
     } catch (err) {
       console.error('Error activating radio mode:', err);

@@ -74,7 +74,9 @@ public class RadioService {
         RadioConfig config = radioConfigRepository.getConfig();
         config.setEnabled(!config.getEnabled());
         if (config.getEnabled()) {
-            config.setSongCounter(0); // Reset contador al activar
+            // Iniciar contador en frequency-1 para que el primer anuncio sea inmediato
+            // (al terminar la canción actual, el contador llegará a frequency)
+            config.setSongCounter(config.getFrequency() - 1);
             resetMemory(); // Reset memoria de sesión
         } else {
             resetMemory(); // También resetear al desactivar

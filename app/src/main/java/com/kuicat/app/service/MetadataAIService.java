@@ -152,14 +152,14 @@ public class MetadataAIService {
             - album: nombre del álbum (si se puede inferir)
             - genre: género musical (Pop, Rock, Electronic, Hip-Hop, Jazz, Classical, Metal, Folk, R&B, Latin, Alternative, Indie, etc.)
             - year: año de lanzamiento (si es una canción conocida)
-            - description: SIEMPRE genera una descripción breve y creativa de la canción (máximo 150 caracteres). Describe el mood, la temática o algo interesante.
+            - description: Escribe una descripción interesante sobre la canción. Si conoces datos sobre ella (historia, curiosidades, contexto, significado), inclúyelos. Si no la conoces, describe su estilo y atmósfera musical.
             
             REGLAS:
             1. Si el título tiene formato "Artista - Canción", sepáralos correctamente
             2. Si el título tiene [HQ], [Official], (Audio), números de track, quítalos
             3. Usa la información existente si es correcta, mejórala si puedes
             4. Para el género, usa categorías conocidas
-            5. La descripción es OBLIGATORIA - siempre genera algo interesante sobre la canción
+            5. La descripción es OBLIGATORIA - siempre genera algo relevante sobre la canción
             6. Si no conoces un campo con certeza, usa null EXCEPTO descripción
             7. Responde SOLO el JSON, sin markdown, sin explicaciones
             

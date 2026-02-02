@@ -178,7 +178,6 @@ public class RadioScriptService {
     private String buildIdentityPrompt(List<String> upcomingSongs) {
         var config = radioService.getConfig();
         String userInstructions = radioService.getUserInstructions();
-        String greeting = getTimeBasedGreeting();
         
         StringBuilder sb = new StringBuilder();
         sb.append("""
@@ -186,8 +185,7 @@ public class RadioScriptService {
             
             === STATION INFO ===
             Station name: %s
-            Time of day: %s
-            """.formatted(config.getRadioName(), greeting));
+            """.formatted(config.getRadioName()));
         
         // Instrucciones del usuario
         if (userInstructions != null && !userInstructions.isBlank()) {
@@ -197,10 +195,10 @@ public class RadioScriptService {
             sb.append("\n(No specific instructions - be creative!)\n");
         }
         
-        // Primeras canciones en cola
+        // Primeras canciones en cola (hasta 20)
         if (upcomingSongs != null && !upcomingSongs.isEmpty()) {
-            sb.append("\n=== FIRST SONGS IN QUEUE ===\n");
-            for (int i = 0; i < Math.min(upcomingSongs.size(), 5); i++) {
+            sb.append("\n=== SONGS IN QUEUE ===\n");
+            for (int i = 0; i < Math.min(upcomingSongs.size(), 20); i++) {
                 sb.append("- ").append(upcomingSongs.get(i)).append("\n");
             }
         }
@@ -261,7 +259,6 @@ public class RadioScriptService {
         String personality = radioService.getPersonalityDescription();
         var config = radioService.getConfig();
         var memory = radioService.getMemory();
-        String greeting = getTimeBasedGreeting();
         String djName = radioService.getDjName1();
         
         StringBuilder sb = new StringBuilder();
@@ -351,7 +348,7 @@ public class RadioScriptService {
         
         // Canción siguiente
         if (context.getNextTitle() != null) {
-            sb.append("Now playing:\n");
+            sb.append("Coming up next:\n");
             sb.append("- Title: ").append(context.getNextTitle()).append("\n");
             if (context.getNextArtist() != null) {
                 sb.append("- Artist: ").append(context.getNextArtist()).append("\n");
@@ -364,7 +361,7 @@ public class RadioScriptService {
             }
         }
         
-        sb.append("\nTime of day: ").append(greeting).append("\n");
+        sb.append("\nCurrent time: ").append(getCurrentTimeFormatted()).append("\n");
         sb.append("Announcement #").append(memory.getAnnouncementCount() + 1).append(" of this session\n");
         
         sb.append("""
@@ -383,21 +380,36 @@ public class RadioScriptService {
             - Interact with the listener by name! Ask them questions, invite them to sing along,
               comment on what they might be doing, or share relatable moments
             
-            DON'T repeat anything from your MEMORY section!
+            CRITICAL - AVOID REPETITION:
+            - DO NOT repeat ANY facts, jokes, stories, or phrases from your MEMORY section above!
+            - Each announcement must be COMPLETELY DIFFERENT from previous ones
+            - If you mentioned something about an artist before, find a NEW fact or angle
+            - Never use the same phrase structure or question format twice
             
             RULES:
             1. Be NATURAL and CONVERSATIONAL
             2. Stay in character with your personality and tonight's vibe
             3. Keep it SHORT - this will be spoken aloud
             4. NO emojis, NO hashtags, NO special characters
-            5. Write in ENGLISH only
-            6. Do NOT include any prefixes like "DJ:" or "[HOST]:"
-            7. Just the announcement text, nothing else
+            5. NO stage directions like *laughs*, *pauses*, (chuckles), etc.
+            6. Write in ENGLISH only
+            7. Do NOT include any prefixes like "DJ:" or "[HOST]:"
+            8. Just the announcement text, nothing else
             
             Your announcement:
             """.formatted(
                 memory.isFirstAnnouncement() 
-                    ? "This is your FIRST announcement - introduce the session theme!" 
+                    ? """
+                      THIS IS YOUR GRAND OPENING! You MUST:
+                      1. Welcome the listener warmly to the show
+                      2. Introduce yourself by name
+                      3. Announce tonight's theme ("%s")
+                      4. Build excitement for what's coming
+                      
+                      This is NOT a regular transition - it's the START of your show!
+                      """.formatted(radioService.getMemory().getIdentity() != null 
+                          ? radioService.getMemory().getIdentity().getSessionName() 
+                          : "tonight's session")
                     : "Continue the narrative thread from your previous announcements."
             ));
         
@@ -409,7 +421,6 @@ public class RadioScriptService {
         String personality2 = radioService.getPersonality2Description();
         var config = radioService.getConfig();
         var memory = radioService.getMemory();
-        String greeting = getTimeBasedGreeting();
         String dj1Name = radioService.getDjName1();
         String dj2Name = radioService.getDjName2();
         
@@ -501,7 +512,7 @@ public class RadioScriptService {
         }
         
         if (context.getNextTitle() != null) {
-            sb.append("Now playing:\n");
+            sb.append("Coming up next:\n");
             sb.append("- ").append(context.getNextTitle());
             if (context.getNextArtist() != null) {
                 sb.append(" by ").append(context.getNextArtist());
@@ -515,7 +526,7 @@ public class RadioScriptService {
             }
         }
         
-        sb.append("\nTime of day: ").append(greeting).append("\n");
+        sb.append("\nCurrent time: ").append(getCurrentTimeFormatted()).append("\n");
         sb.append("Announcement #").append(memory.getAnnouncementCount() + 1).append(" of this session\n");
         
         sb.append("""
@@ -536,7 +547,11 @@ public class RadioScriptService {
               invite them to participate, or comment on what they might be feeling
 
             
-            DON'T repeat anything from your MEMORY section!
+            CRITICAL - AVOID REPETITION:
+            - DO NOT repeat ANY facts, jokes, stories, or phrases from your MEMORY section above!
+            - Each announcement must be COMPLETELY DIFFERENT from previous ones
+            - If you mentioned something about an artist before, find a NEW fact or angle
+            - Never use the same joke structure or question format twice
             
             FORMAT YOUR RESPONSE EXACTLY LIKE THIS (3 lines only):
             [HOST1] %s opens with something interesting
@@ -548,17 +563,28 @@ public class RadioScriptService {
             2. Keep each line SHORT (50-100 words max per line)
             3. The dialogue should flow naturally as a conversation
             4. They can banter, joke, or react to each other
-            5. NO emojis, NO hashtags
-            6. Write in ENGLISH only
-            7. Use EXACTLY the format [HOST1] and [HOST2] prefixes
-            8. The last line should transition to the next song
+            5. NO emojis, NO hashtags, NO special characters
+            6. NO stage directions like *laughs*, *pauses*, (chuckles), etc.
+            7. Write in ENGLISH only
+            8. Use EXACTLY the format [HOST1] and [HOST2] prefixes
+            9. The last line should transition to the next song
             
             Your dialogue:
             """.formatted(
                 dj1Name,
                 dj2Name,
                 memory.isFirstAnnouncement() 
-                    ? "This is your FIRST dialogue - introduce yourselves by name and the session theme!" 
+                    ? """
+                      THIS IS YOUR OPENING! You MUST:
+                      1. Greet the listener warmly and welcome them to the show
+                      2. Introduce BOTH hosts by name ("Hi, I'm Angela and this is Pelón!")
+                      3. Announce the session theme ("%s")
+                      4. Build excitement for what's coming
+                      
+                      This is NOT a regular transition - it's the GRAND OPENING of your show!
+                      """.formatted(radioService.getMemory().getIdentity() != null 
+                          ? radioService.getMemory().getIdentity().getSessionName() 
+                          : "tonight's session")
                     : "Continue the banter and narrative from your previous dialogues.",
                 dj1Name,
                 dj2Name,
@@ -597,12 +623,8 @@ public class RadioScriptService {
         return lines.toArray(new String[0]);
     }
     
-    private String getTimeBasedGreeting() {
-        int hour = LocalTime.now().getHour();
-        if (hour < 6) return "Late night / early morning";
-        if (hour < 12) return "Morning";
-        if (hour < 17) return "Afternoon";
-        if (hour < 21) return "Evening";
-        return "Night";
+    private String getCurrentTimeFormatted() {
+        LocalTime now = LocalTime.now();
+        return String.format("%02d:%02d", now.getHour(), now.getMinute());
     }
 }

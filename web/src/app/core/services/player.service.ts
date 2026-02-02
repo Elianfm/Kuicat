@@ -295,8 +295,10 @@ export class PlayerService {
   
   /**
    * Carga y reproduce una canción.
+   * @param song La canción a reproducir
+   * @param skipPreGeneration Si es true, no pre-genera el anuncio de radio (útil cuando viene de transición de radio)
    */
-  async playSong(song: Song): Promise<void> {
+  async playSong(song: Song, skipPreGeneration = false): Promise<void> {
     if (!this.mediaElement) {
       console.error('MediaElement no inicializado');
       return;
@@ -323,7 +325,10 @@ export class PlayerService {
       await this.mediaElement.play();
       
       // Pre-generar anuncio de radio para la siguiente transición
-      this.preGenerateRadioAnnouncement();
+      // (salvo que venga de una transición de radio, que lo hace manualmente después)
+      if (!skipPreGeneration) {
+        this.preGenerateRadioAnnouncement();
+      }
       
     } catch (error) {
       console.error('Error al reproducir:', error);
@@ -503,6 +508,14 @@ export class PlayerService {
     this.mediaElement?.play().catch(console.error);
   }
   
+  /**
+   * Fuerza la pre-generación del anuncio de radio.
+   * Útil cuando se activa el modo radio para tener el anuncio listo de inmediato.
+   */
+  async triggerRadioPreGeneration(): Promise<void> {
+    await this.preGenerateRadioAnnouncement();
+  }
+
   /**
    * Siguiente canción en la queue.
    * También verifica si toca anuncio de radio.
@@ -1080,11 +1093,6 @@ export class PlayerService {
     const currentSong = queue[currentIndex];
     const nextSong = queue[currentIndex + 1];
     
-    console.log('[Radio Transition] idx:', currentIndex, 
-      '| current:', currentSong?.title?.substring(0, 30),
-      '| next:', nextSong?.title?.substring(0, 30),
-      '| hasPending:', !!this.pendingRadioAnnouncement);
-    
     if (!nextSong) {
       this.next();
       return;
@@ -1158,6 +1166,10 @@ export class PlayerService {
       // 6. Fade in de la siguiente canción y resetear estado
       await this.fadeInAndPlaySong(nextSong, transition.fadeInDuration);
       this.resetFadeState();
+      
+      // 7. Ahora pre-generar anuncio para la SIGUIENTE transición
+      // (después de que el índice ya se actualizó correctamente)
+      this.preGenerateRadioAnnouncement();
       
     } catch (error) {
       this._isPlayingRadioAnnouncement.set(false);
@@ -1306,8 +1318,8 @@ export class PlayerService {
       this.mediaElement.volume = startVolume;
     }
     
-    // Cargar y empezar a reproducir
-    await this.playSong(song);
+    // Cargar y empezar a reproducir (skip pre-generation, se hace después con índices correctos)
+    await this.playSong(song, true);
     
     // Fade in gradual desde volumen de fondo hasta volumen objetivo
     const steps = 25;
@@ -1620,7 +1632,8 @@ export class PlayerService {
     this.resetFadeState();
     
     // Verificar si radio está habilitado
-    if (!this.radioService.isEnabled()) {
+    const radioEnabled = this.radioService.isEnabled();
+    if (!radioEnabled) {
       return;
     }
     
@@ -1634,10 +1647,6 @@ export class PlayerService {
     const currentIndex = this._queueIndex();
     const currentSong = queue[currentIndex];
     const nextSong = queue[currentIndex + 1];
-
-    console.log('[Radio PreGen] idx:', currentIndex,
-      '| current:', currentSong?.title?.substring(0, 30),
-      '| next:', nextSong?.title?.substring(0, 30));
 
     if (!nextSong) {
       return;
