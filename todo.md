@@ -325,6 +325,7 @@ Tabla: playlist_songs
 ### Fase 5: Pulido y Distribución
 - [x] Launcher automático (.bat/.exe) - Kuicat.exe con banner ASCII
 - [x] Launcher mejorado: Backend/Frontend en paralelo, procesos ocultos, auto-cierre al cerrar launcher
+- [x] Título dinámico: Muestra canción actual en pestaña del navegador (🎵/⏸️/📻)
 - [ ] Documentación
 - [ ] Preparar para código abierto (README, licencia, contribución)
 

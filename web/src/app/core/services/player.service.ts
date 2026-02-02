@@ -124,6 +124,25 @@ export class PlayerService {
   private readonly VIDEO_FORMATS = new Set(['mp4', 'webm', 'mkv']);
   
   /**
+   * Actualiza el título del documento según el estado actual.
+   */
+  private updateDocumentTitle(): void {
+    const song = this._currentSong();
+    const isPlaying = this._isPlaying();
+    const isRadioAnnouncement = this._isPlayingRadioAnnouncement();
+    
+    if (isRadioAnnouncement) {
+      document.title = '📻 On Air | Kuicat';
+    } else if (song) {
+      const icon = isPlaying ? '🎵' : '⏸️';
+      const artist = song.artist || 'Unknown';
+      document.title = `${icon} ${song.title} - ${artist} | Kuicat`;
+    } else {
+      document.title = 'Kuicat';
+    }
+  }
+  
+  /**
    * Inicializa el servicio con el elemento de video.
    * Debe llamarse desde el componente principal.
    */
@@ -148,10 +167,12 @@ export class PlayerService {
     
     element.addEventListener('play', () => {
       this._isPlaying.set(true);
+      this.updateDocumentTitle();
     });
     
     element.addEventListener('pause', () => {
       this._isPlaying.set(false);
+      this.updateDocumentTitle();
     });
     
     element.addEventListener('loadedmetadata', () => {
@@ -323,6 +344,7 @@ export class PlayerService {
     
     try {
       await this.mediaElement.play();
+      this.updateDocumentTitle();
       
       // Pre-generar anuncio de radio para la siguiente transición
       // (salvo que venga de una transición de radio, que lo hace manualmente después)
@@ -594,6 +616,7 @@ export class PlayerService {
     }
     
     this._isPlayingRadioAnnouncement.set(true);
+    this.updateDocumentTitle();
     
     try {
       const announcement = this.lastPlayedAnnouncement;
@@ -611,6 +634,7 @@ export class PlayerService {
       // Silently handle error
     } finally {
       this._isPlayingRadioAnnouncement.set(false);
+      this.updateDocumentTitle();
       
       // Restaurar volumen
       if (this.mediaElement) {
@@ -1139,6 +1163,7 @@ export class PlayerService {
       
       // 2. Marcar que estamos reproduciendo anuncio
       this._isPlayingRadioAnnouncement.set(true);
+      this.updateDocumentTitle();
       
       // 3. Reproducir anuncio (puede ser multi, dual o simple)
       const isMulti = announcement.audioUrl.startsWith('multi:') || announcement.audioUrl.startsWith('dual:');
@@ -1174,6 +1199,7 @@ export class PlayerService {
     } catch (error) {
       this._isPlayingRadioAnnouncement.set(false);
       this._nextTransitionHasAnnouncement.set(false);
+      this.updateDocumentTitle();
       this.resetFadeState();
       this.next();
     }
@@ -1473,6 +1499,7 @@ export class PlayerService {
     
     try {
       this._isPlayingRadioAnnouncement.set(true);
+      this.updateDocumentTitle();
       
       // 1. Pre-silencio
       await this.sleep(announcement.transition.preSilence);
@@ -1531,6 +1558,7 @@ export class PlayerService {
     } catch {
       this._isPlayingRadioAnnouncement.set(false);
       this._nextTransitionHasAnnouncement.set(false);
+      this.updateDocumentTitle();
       this.resetFadeState();
       // Restaurar volumen normal
       if (this.mediaElement) {
